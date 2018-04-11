@@ -44,27 +44,37 @@ echo "-----> `date`: Create env"
 
 bin/bosh interpolate ~/workspace/bosh-deployment/bosh.yml \
   -v internal_ip="$DIRECTOR_IP" \
-  --vars-store ./state/creds.yml \
+  --vars-store ./state/bosh-deployment-creds.yml \
 ;
 
+DIRECTOR_CA_CERT=$(bosh int state/bosh-deployment-creds.yml --path /default_ca/certificate)
+
+bin/bosh interpolate ~/workspace/bosh-deployment/runtime-configs/dns.yml \
+  --vars-store ./state/dns-creds.yml \
+;
+
+
 if [ -n ${FORGET_STEMCELLS:-""} ]; then
-  jq -r '.stemcells = [] | .current_stemcell_id = ""' state/state.json > state/new_state.json
-  mv state/new_state.json state/state.json
+  jq -r '.stemcells = [] | .current_stemcell_id = ""' state/bosh_state.json > state/new_bosh_state.json
+  mv state/new_bosh_state.json state/bosh_state.json
 fi
 
 if [ -n ${FORGET_DISKS:-""} ]; then
-  jq -r ' .disks = [] | .current_disk_id = ""' state/state.json > state/new_state.json
-  mv state/new_state.json state/state.json
+  jq -r ' .disks = [] | .current_disk_id = ""' state/bosh_state.json > state/new_bosh_state.json
+  mv state/new_bosh_state.json state/bosh_state.json
 fi
 
-#export BOSH_LOG_LEVEL=debug
 stemcell_sha1=$(shasum -a1 < state/stemcell.tgz | awk '{print $1}')
+
+#export BOSH_LOG_LEVEL=debug
+HOME=state/bosh_home \
 bin/bosh create-env ~/workspace/bosh-deployment/bosh.yml \
+  -o bosh-dns-director-index-records-opsfile.yml \
   -o ~/workspace/bosh-deployment/jumpbox-user.yml \
   -o ~/workspace/bosh-deployment/vsphere/cpi.yml \
   -o govmomi-vsphere-cpi-opsfile.yml \
-  --vars-store ./state/creds.yml \
-  --state ./state/state.json \
+  --vars-file ./state/bosh-deployment-creds.yml \
+  --state ./state/bosh_state.json \
   -v vcap_mkpasswd=$VCAP_MKPASSWD \
   -v cpi_url=file://$PWD/state/cpi.tgz \
   -v director_name=bosh-1 \
@@ -85,4 +95,25 @@ bin/bosh create-env ~/workspace/bosh-deployment/bosh.yml \
   -v stemcell_url=file://$PWD/state/stemcell.tgz \
   -v stemcell_sha1=$stemcell_sha1 \
   ${RECREATE_VM:+"--recreate"} \
-  ;
+;
+
+bin/bosh update-cloud-config \
+  -n \
+  -e https://$DIRECTOR_IP:25555 \
+  --ca-cert="$DIRECTOR_CA_CERT" \
+  -v vcenter_cluster=cluster1 \
+  -v internal_cidr="$NETWORK_CIDR" \
+  -v internal_gw="$NETWORK_GW" \
+  -v network_name="$VCENTER_NETWORK_NAME" \
+  ~/workspace/bosh-deployment/vsphere/cloud-config.yml \
+;
+
+bin/bosh update-runtime-config \
+  -n \
+  -e https://$DIRECTOR_IP:25555 \
+  --ca-cert="$DIRECTOR_CA_CERT" \
+  --vars-file ./state/dns-creds.yml \
+  --name default \
+  -o bosh-dns-addon-all-stemcells-opsfile.yml \
+  ~/workspace/bosh-deployment/runtime-configs/dns.yml \
+;

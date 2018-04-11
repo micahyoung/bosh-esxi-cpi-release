@@ -32,16 +32,16 @@ source state/env.sh
 : ${NETWORK_RESERVED_RANGE:?"!"}
 : ${NETWORK_STATIC_RANGE:?"!"}
 : ${VCENTER_NETWORK_NAME:?"!"}
-DIRECTOR_ADMIN_PASSWORD=$(bosh int $PWD/state/creds.yml --path /admin_password)
-DIRECTOR_CA_CERT=$(bosh int $PWD/state/creds.yml --path /default_ca/certificate)
+DIRECTOR_ADMIN_PASSWORD=$(bosh int $PWD/state/bosh-deployment-creds.yml --path /admin_password)
+DIRECTOR_CA_CERT=$(bosh int $PWD/state/bosh-deployment-creds.yml --path /default_ca/certificate)
 ENVIRONMENT=bats
-PRIVATE_KEY="$(bin/bosh int $PWD/state/creds.yml --path /jumpbox_ssh/private_key)"
+PRIVATE_KEY="$(bin/bosh int $PWD/state/bosh-deployment-creds.yml --path /jumpbox_ssh/private_key)"
 echo "$PRIVATE_KEY" > $PWD/state/bosh.pem
 
 export BAT_STEMCELL=$PWD/state/stemcell.tgz
 export BAT_DEPLOYMENT_SPEC=$PWD/state/bats.yml
 export BAT_BOSH_CLI=$PWD/bin/bosh
-export BAT_DNS_HOST=$NETWORK_DNS
+export BAT_DNS_HOST=169.254.0.2 # bosh-dns
 export BAT_INFRASTRUCTURE=vsphere
 export BAT_NETWORKING=manual
 export BAT_PRIVATE_KEY="$PRIVATE_KEY"
@@ -80,5 +80,6 @@ bosh alias-env $ENVIRONMENT \
 
 pushd ~/workspace/bosh-acceptance-tests
   bundle
-  bundle exec rspec spec --tag core
+  bundle exec rspec spec ./spec/system/network_configuration_spec.rb:23
+  #bundle exec rspec spec --tag ~vip_networking --tag ~dynamic_networking --tag ~root_partition --tag ~raw_ephemeral_storage
 popd
