@@ -52,6 +52,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hooklift/govmx"
+  packages = ["."]
+  revision = "983fd9388b8a5705dc4697152313a443ef5c9978"
+
+[[projects]]
+  branch = "master"
   name = "github.com/kr/pretty"
   packages = ["."]
   revision = "cfb55aafdaf3ec08f0db22699ab822c50091b1c4"
@@ -286,6 +292,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "836f47f783df54cd474566989106bdc5325716d48e15f29d698de0d5a3e949d3"
+  inputs-digest = "1639077c55fe9d7f9c088abd1c483e916131021c3bea77590ad0a66415e0bc8b"
   solver-name = "gps-cdcl"
   solver-version = 1

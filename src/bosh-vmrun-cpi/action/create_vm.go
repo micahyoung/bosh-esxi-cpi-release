@@ -5,12 +5,12 @@ import (
 	boshuuid "github.com/cloudfoundry/bosh-utils/uuid"
 	"github.com/cppforlife/bosh-cpi-go/apiv1"
 
-	"bosh-vmrun-cpi/govc"
+	"bosh-vmrun-cpi/driver"
 	"bosh-vmrun-cpi/vm"
 )
 
 type CreateVMMethod struct {
-	govcClient      govc.GovcClient
+	driverClient    driver.Client
 	agentSettings   vm.AgentSettings
 	agentOptions    apiv1.AgentOptions
 	agentEnvFactory apiv1.AgentEnvFactory
@@ -18,9 +18,9 @@ type CreateVMMethod struct {
 	logger          boshlog.Logger
 }
 
-func NewCreateVMMethod(govcClient govc.GovcClient, agentSettings vm.AgentSettings, agentOptions apiv1.AgentOptions, agentEnvFactory apiv1.AgentEnvFactory, uuidGen boshuuid.Generator, logger boshlog.Logger) CreateVMMethod {
+func NewCreateVMMethod(driverClient driver.Client, agentSettings vm.AgentSettings, agentOptions apiv1.AgentOptions, agentEnvFactory apiv1.AgentEnvFactory, uuidGen boshuuid.Generator, logger boshlog.Logger) CreateVMMethod {
 	return CreateVMMethod{
-		govcClient:      govcClient,
+		driverClient:    driverClient,
 		agentSettings:   agentSettings,
 		agentOptions:    agentOptions,
 		agentEnvFactory: agentEnvFactory,
@@ -48,12 +48,12 @@ func (c CreateVMMethod) CreateVM(
 		return newVMCID, err
 	}
 
-	_, err = c.govcClient.CloneVM(stemcellId, vmId)
+	_, err = c.driverClient.CloneVM(stemcellId, vmId)
 	if err != nil {
 		return newVMCID, err
 	}
 
-	err = c.govcClient.SetVMResources(vmId, vmProps.CPU, vmProps.RAM)
+	err = c.driverClient.SetVMResources(vmId, vmProps.CPU, vmProps.RAM)
 	if err != nil {
 		return newVMCID, err
 	}
@@ -72,7 +72,7 @@ func (c CreateVMMethod) CreateVM(
 			return newVMCID, err
 		}
 
-		err = c.govcClient.SetVMNetworkAdapter(vmId, adapterNetworkName, macAddress)
+		err = c.driverClient.SetVMNetworkAdapter(vmId, adapterNetworkName, macAddress)
 		if err != nil {
 			return newVMCID, err
 		}
@@ -84,7 +84,7 @@ func (c CreateVMMethod) CreateVM(
 	agentEnv := c.agentEnvFactory.ForVM(agentID, newVMCID, updatedNetworks, vmEnv, c.agentOptions)
 	agentEnv.AttachSystemDisk("0")
 
-	err = c.govcClient.CreateEphemeralDisk(vmId, vmProps.Disk)
+	err = c.driverClient.CreateEphemeralDisk(vmId, vmProps.Disk)
 	if err != nil {
 		return newVMCID, err
 	}
@@ -92,17 +92,17 @@ func (c CreateVMMethod) CreateVM(
 	agentEnv.AttachEphemeralDisk("1")
 
 	envIsoPath, err := c.agentSettings.GenerateAgentEnvIso(agentEnv)
+	defer c.agentSettings.Cleanup()
 	if err != nil {
 		return newVMCID, err
 	}
 
-	_, err = c.govcClient.UpdateVMIso(vmId, envIsoPath)
+	_, err = c.driverClient.UpdateVMIso(vmId, envIsoPath)
 	if err != nil {
 		return newVMCID, err
 	}
-	c.agentSettings.Cleanup()
 
-	_, err = c.govcClient.StartVM(vmId)
+	_, err = c.driverClient.StartVM(vmId)
 	if err != nil {
 		return newVMCID, err
 	}

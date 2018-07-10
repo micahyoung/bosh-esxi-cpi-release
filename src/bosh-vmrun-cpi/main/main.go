@@ -15,6 +15,7 @@ import (
 
 	"bosh-vmrun-cpi/action"
 	"bosh-vmrun-cpi/config"
+	"bosh-vmrun-cpi/driver"
 	"bosh-vmrun-cpi/govc"
 	"bosh-vmrun-cpi/stemcell"
 	"bosh-vmrun-cpi/vm"
@@ -38,12 +39,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	driverConfig := driver.NewConfig(cpiConfig)
 	govcRunner := govc.NewGovcRunner(logger)
+	vmrunRunner := driver.NewVmrunRunner(driverConfig.VmrunPath(), logger)
+	ovftoolRunner := driver.NewOvftoolRunner(driverConfig.OvftoolPath(), logger)
+	vmxBuilder := driver.NewVmxBuilder(logger)
 	govcClient := govc.NewClient(govcRunner, govc.NewGovcConfig(cpiConfig), logger)
+	driverClient := driver.NewClient(vmrunRunner, ovftoolRunner, vmxBuilder, driverConfig, logger)
 	stemcellClient := stemcell.NewClient(compressor, fs, logger)
 	agentSettings := vm.NewAgentSettings(fs, logger)
 	agentEnvFactory := apiv1.NewAgentEnvFactory()
-	cpiFactory := action.NewFactory(govcClient, stemcellClient, agentSettings, agentEnvFactory, cpiConfig, fs, uuidGen, logger)
+	cpiFactory := action.NewFactory(govcClient, driverClient, stemcellClient, agentSettings, agentEnvFactory, cpiConfig, fs, uuidGen, logger)
 
 	cli := rpc.NewFactory(logger).NewCLI(cpiFactory)
 

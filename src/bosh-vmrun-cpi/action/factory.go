@@ -10,6 +10,7 @@ import (
 	"github.com/cppforlife/bosh-cpi-go/apiv1"
 
 	"bosh-vmrun-cpi/config"
+	"bosh-vmrun-cpi/driver"
 	"bosh-vmrun-cpi/govc"
 	"bosh-vmrun-cpi/stemcell"
 	"bosh-vmrun-cpi/vm"
@@ -17,6 +18,7 @@ import (
 
 type Factory struct {
 	govcClient      govc.GovcClient
+	driverClient    driver.Client
 	stemcellClient  stemcell.StemcellClient
 	agentSettings   vm.AgentSettings
 	agentEnvFactory apiv1.AgentEnvFactory
@@ -44,6 +46,7 @@ var _ apiv1.CPI = CPI{}
 
 func NewFactory(
 	govcClient govc.GovcClient,
+	driverClient driver.Client,
 	stemcellClient stemcell.StemcellClient,
 	agentSettings vm.AgentSettings,
 	agentEnvFactory apiv1.AgentEnvFactory,
@@ -54,6 +57,7 @@ func NewFactory(
 ) Factory {
 	return Factory{
 		govcClient,
+		driverClient,
 		stemcellClient,
 		agentSettings,
 		agentEnvFactory,
@@ -66,9 +70,9 @@ func NewFactory(
 
 func (f Factory) New(_ apiv1.CallContext) (apiv1.CPI, error) {
 	return CPI{
-		NewCreateStemcellMethod(f.govcClient, f.stemcellClient, f.uuidGen, f.logger),
+		NewCreateStemcellMethod(f.driverClient, f.stemcellClient, f.uuidGen, f.logger),
 		NewDeleteStemcellMethod(f.govcClient, f.logger),
-		NewCreateVMMethod(f.govcClient, f.agentSettings, f.config.GetAgentOptions(), f.agentEnvFactory, f.uuidGen, f.logger),
+		NewCreateVMMethod(f.driverClient, f.agentSettings, f.config.GetAgentOptions(), f.agentEnvFactory, f.uuidGen, f.logger),
 		NewDeleteVMMethod(f.govcClient),
 		NewHasVMMethod(f.govcClient),
 		NewCreateDiskMethod(f.govcClient, f.uuidGen),

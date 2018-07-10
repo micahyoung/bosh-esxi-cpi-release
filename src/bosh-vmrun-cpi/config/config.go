@@ -20,6 +20,13 @@ type Cloud struct {
 type CPIProperties struct {
 	Vcenters []Vcenter
 	Agent    apiv1.AgentOptions
+	Vmrun    Vmrun
+}
+
+type Vmrun struct {
+	Vm_Store_Path    string
+	Vmrun_Bin_Path   string
+	Ovftool_Bin_Path string
 }
 
 type Vcenter struct {

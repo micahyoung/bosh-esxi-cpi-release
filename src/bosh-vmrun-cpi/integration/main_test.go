@@ -3,7 +3,6 @@ package integration_test
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -14,19 +13,10 @@ import (
 )
 
 var _ = Describe("main", func() {
-	var configPath string
 	var stemcellCid string
 	var vmCid string
 	var diskId string
 	var response map[string]interface{}
-
-	BeforeEach(func() {
-		configPath = GenerateCPIConfig()
-	})
-
-	AfterEach(func() {
-		os.Remove(configPath)
-	})
 
 	It("runs the cpi", func() {
 		cpiBin, err := gexec.Build("bosh-vmrun-cpi/main")
@@ -34,7 +24,7 @@ var _ = Describe("main", func() {
 
 		request := fmt.Sprintf(`{ "method": "info", "arguments": [] }`)
 
-		session, stdin := gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin := GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 
 		stdin.Write([]byte(request))
 		stdin.Close()
@@ -44,7 +34,7 @@ var _ = Describe("main", func() {
 		Expect(response["result"]).ToNot(BeNil())
 
 		//create_stemcell
-		imageTarballPath := filepath.Join(extractedStemcellTempDir, "image")
+		imageTarballPath := filepath.Join(ExtractedStemcellTempDir, "image")
 		request = fmt.Sprintf(`{
 			"method": "create_stemcell",
 			"arguments": ["%s", {
@@ -62,7 +52,7 @@ var _ = Describe("main", func() {
 			}]
 		}`, imageTarballPath)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -93,7 +83,7 @@ var _ = Describe("main", func() {
 		  ]
 		}`, stemcellCid)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -111,7 +101,7 @@ var _ = Describe("main", func() {
 			"arguments":[%s,{},"%s"]
 		}`, diskMB, vmCid)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -126,7 +116,7 @@ var _ = Describe("main", func() {
 		  "arguments":["%s","%s"]
 		}`, vmCid, diskId)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -140,7 +130,7 @@ var _ = Describe("main", func() {
 		  "arguments":["%s","%s"]
 		}`, vmCid, diskId)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -154,7 +144,7 @@ var _ = Describe("main", func() {
 			"arguments":["%s"]
 		}`, diskId)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -168,7 +158,7 @@ var _ = Describe("main", func() {
 			"arguments":["%s"]
 		}`, vmCid)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
@@ -182,7 +172,7 @@ var _ = Describe("main", func() {
 			"arguments":["%s"]
 		}`, stemcellCid)
 
-		session, stdin = gexecCommandWithStdin(cpiBin, "-configPath", configPath)
+		session, stdin = GexecCommandWithStdin(cpiBin, "-configPath", CpiConfigPath)
 		stdin.Write([]byte(request))
 		stdin.Close()
 
