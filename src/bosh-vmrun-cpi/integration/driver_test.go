@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -34,11 +36,10 @@ var _ = Describe("Driver", func() {
 	})
 
 	AfterEach(func() {
-		//DestroyDisk
-		//if client.HasVM(vmId) {
-		//	_, err := client.DestroyVM(vmId)
-		//	Expect(err).ToNot(HaveOccurred())
-		//}
+		if client.HasVM(vmId) {
+			err := client.DestroyVM(vmId)
+			Expect(err).ToNot(HaveOccurred())
+		}
 	})
 
 	Describe("full lifecycle", func() {
@@ -103,29 +104,24 @@ var _ = Describe("Driver", func() {
 			err = client.UpdateVMIso(vmId, envIsoPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = client.StartVM(vmId)
+			err = client.StartVM(vmId)
 			Expect(err).ToNot(HaveOccurred())
 
-			//time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Second)
 
-			//err = client.DetachDisk(vmId, "disk-1")
-			//Expect(err).ToNot(HaveOccurred())
+			err = client.DetachDisk(vmId, "disk-1")
+			Expect(err).ToNot(HaveOccurred())
 
-			//result, err = client.DestroyVM(vmId)
-			//Expect(err).ToNot(HaveOccurred())
-			//Expect(result).To(Equal(""))
+			err = client.DestroyVM(vmId)
+			Expect(err).ToNot(HaveOccurred())
 
-			//time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Second)
 
-			//found = client.HasVM(vmId)
-			//Expect(found).To(Equal(false))
+			found = client.HasVM(vmId)
+			Expect(found).To(Equal(false))
 
-			//err = client.DestroyDisk("disk-1")
-			//Expect(err).ToNot(HaveOccurred())
-
-			//result, err = client.DestroyVM(stemcellId)
-			//Expect(err).ToNot(HaveOccurred())
-			//Expect(result).To(Equal(""))
+			err = client.DestroyDisk("disk-1")
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
@@ -133,12 +129,10 @@ var _ = Describe("Driver", func() {
 		It("destroys unstarted vms", func() {
 			vmId := "vm-virtualmachine"
 			var success bool
-			var result string
 			var err error
 
-			result, err = client.DestroyVM(vmId)
+			err = client.DestroyVM(vmId)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(Equal(""))
 
 			ovfPath := "../test/fixtures/test.ovf"
 			success, err = client.ImportOvf(ovfPath, vmId)
@@ -149,18 +143,16 @@ var _ = Describe("Driver", func() {
 			err = client.UpdateVMIso(vmId, envIsoPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			result, err = client.DestroyVM(vmId)
+			err = client.DestroyVM(vmId)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(Equal(""))
 		})
 	})
 
 	Describe("empty state", func() {
 		It("does not fail with nonexistant vms", func() {
 			vmId := "doesnt-exist"
-			result, err := client.DestroyVM(vmId)
+			err := client.DestroyVM(vmId)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(Equal(""))
 
 			found := client.HasVM(vmId)
 			Expect(found).To(Equal(false))

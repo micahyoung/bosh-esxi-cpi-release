@@ -144,32 +144,31 @@ func (c ClientImpl) UpdateVMIso(vmName string, localIsoPath string) error {
 	return nil
 }
 
-func (c ClientImpl) StartVM(vmName string) (string, error) {
-	var result string
+func (c ClientImpl) StartVM(vmName string) error {
 	var err error
 
-	result, err = c.startVM(vmName)
+	err = c.startVM(vmName)
 	if err != nil {
-		c.logger.ErrorWithDetails("driver", "starting VM", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("driver", "starting VM", err)
+		return err
 	}
 
-	result, err = c.waitForVMStart(vmName)
+	err = c.waitForVMStart(vmName)
 	if err != nil {
-		c.logger.ErrorWithDetails("driver", "waiting for VM to start", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("driver", "waiting for VM to start", err)
+		return err
 	}
 
-	return result, nil
+	return nil
 }
 
-func (c ClientImpl) waitForVMStart(vmName string) (string, error) {
+func (c ClientImpl) waitForVMStart(vmName string) error {
 	for {
 		var vmState string
 		var err error
 
 		if vmState, err = c.vmState(vmName); err != nil {
-			return vmState, err
+			return err
 		}
 
 		if vmState == STATE_POWER_ON {
@@ -179,14 +178,15 @@ func (c ClientImpl) waitForVMStart(vmName string) (string, error) {
 		time.Sleep(1 * time.Second)
 	}
 
-	return "", nil
+	return nil
 }
 
-func (c ClientImpl) startVM(vmName string) (string, error) {
+func (c ClientImpl) startVM(vmName string) error {
 	args := []string{"start", c.vmxPath(vmName), "nogui"}
 	//args := []string{"start", c.vmxPath(vmName)}
 
-	return c.vmrunRunner.CliCommand(args, nil)
+	_, err := c.vmrunRunner.CliCommand(args, nil)
+	return err
 }
 
 func (c ClientImpl) HasVM(vmName string) bool {
@@ -238,71 +238,56 @@ func (c ClientImpl) AttachDisk(vmName string, diskId string) error {
 }
 
 func (c ClientImpl) DetachDisk(vmName string, diskId string) error {
-	var result string
 	var err error
-	var diskDeviceName string
 
-	//diskDeviceName, err := c.getVMDiskName(vmName, diskId)
+	err = c.vmxBuilder.DetachDisk(c.persistentDiskPath(vmName), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "getVMDiskName", err, diskDeviceName)
-		return err
-	}
-
-	//result, err := c.detachDisk(vmName, diskDeviceName)
-	if err != nil {
-		c.logger.ErrorWithDetails("govc", "DetachDisk", err, result)
+		c.logger.ErrorWithDetails("govc", "DetachDisk", err)
 		return err
 	}
 	return nil
 }
 
-func (c ClientImpl) DestroyDisk(diskName string) error {
-	var pathFound bool
-	var result string
+func (c ClientImpl) DestroyDisk(diskId string) error {
 	var err error
 
-	diskPath := fmt.Sprintf(`%s.vmdk`, diskName)
-	_ = diskPath
-	//pathFound, err := c.datastorePathExists(diskPath)
+	err = os.Remove(c.persistentDiskPath(diskId))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "finding Path", err, pathFound)
+		c.logger.ErrorWithDetails("driver", "DestroyDisk", err)
 		return err
-	}
-
-	if pathFound {
-		//result, err := c.deleteDatastoreObject(diskPath)
-		if err != nil {
-			c.logger.ErrorWithDetails("govc", "delete VM files", err, result)
-			return err
-		}
 	}
 
 	return nil
 }
 
-func (c ClientImpl) DestroyVM(vmName string) (string, error) {
-	var result string
+func (c ClientImpl) DestroyVM(vmName string) error {
 	var err error
 	var vmState string
 
 	vmState, err = c.vmState(vmName)
 	if err != nil {
-		return result, err
+		return err
 	}
 
 	if vmState == STATE_POWER_ON {
-		result, err = c.stopVm(vmName)
+		err = c.stopVm(vmName)
 		if err != nil {
-			return result, err
+			return err
 		}
 	}
 
-	result, err = c.destroyVm(vmName)
+	err = c.destroyVm(vmName)
 	if err != nil {
-		return result, err
+		return err
 	}
 
-	return result, nil
+	err = os.Remove(c.ephemeralDiskPath(vmName))
+	if err != nil {
+		c.logger.ErrorWithDetails("driver", "DestroyDisk", err)
+		return err
+	}
+
+	return nil
 }
 
 func (c ClientImpl) GetVMInfo(vmName string) (VMInfo, error) {
@@ -330,55 +315,18 @@ func (c ClientImpl) initHardware(vmName string) error {
 	return c.vmxBuilder.InitHardware(c.vmxPath(vmName))
 }
 
-func (c ClientImpl) replaceVm(currentVmName string, vmUpdateFunc func(string) error) error {
-	var err error
-
-	updateVmName := fmt.Sprintf("%s-updated", currentVmName)
-
-	//TODO: enable when we confirm how VM lifecycle needs to be managed when chanages happen
-	//result, err = c.stopVm(currentVmName)
-	//if err != nil {
-	//	return err
-	//}
-
-	_, err = c.cloneVm(currentVmName, updateVmName)
-	if err != nil {
-		return err
-	}
-
-	err = vmUpdateFunc(updateVmName)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.destroyVm(currentVmName)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.cloneVm(updateVmName, currentVmName)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.destroyVm(updateVmName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c ClientImpl) stopVm(vmName string) (string, error) {
+func (c ClientImpl) stopVm(vmName string) error {
 	args := []string{"stop", c.vmxPath(vmName)}
 
-	return c.vmrunRunner.CliCommand(args, nil)
+	_, err := c.vmrunRunner.CliCommand(args, nil)
+	return err
 }
 
-func (c ClientImpl) destroyVm(vmName string) (string, error) {
+func (c ClientImpl) destroyVm(vmName string) error {
 	args := []string{"deleteVM", c.vmxPath(vmName)}
 
-	return c.vmrunRunner.CliCommand(args, nil)
+	_, err := c.vmrunRunner.CliCommand(args, nil)
+	return err
 }
 
 func (c ClientImpl) addNetwork(vmName string, networkName string, macAddress string) error {
@@ -389,104 +337,6 @@ func (c ClientImpl) setVMResources(vmName string, cpuCount int, ramMB int) error
 	return c.vmxBuilder.SetVMResources(cpuCount, ramMB, c.vmxPath(vmName))
 }
 
-//
-//func (c ClientImpl) registerDatastoreVm(stemcellVmName string, cloneVmName string) (string, error) {
-//	vmxPath := fmt.Sprintf("%s/%s.vmx", cloneVmName, stemcellVmName)
-//	flags := map[string]string{
-//		"name": cloneVmName,
-//	}
-//	args := []string{vmxPath}
-//
-//	return c.runner.CliCommand("vm.register", flags, args)
-//}
-//
-//
-//func (c ClientImpl) upload(cloneVmName string, localPath string, datastorePath string) (string, error) {
-//	flags := map[string]string{}
-//	args := []string{localPath, datastorePath}
-//
-//	return c.runner.CliCommand("datastore.upload", flags, args)
-//}
-//
-//
-//func (c ClientImpl) ejectCdrom(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"vm": cloneVmName,
-//	}
-//
-//	return c.runner.CliCommand("device.cdrom.eject", flags, nil)
-//}
-//
-//func (c ClientImpl) insertCdrom(cloneVmName string, datastorePath string) (string, error) {
-//	flags := map[string]string{
-//		"vm": cloneVmName,
-//	}
-//	args := []string{datastorePath}
-//
-//	return c.runner.CliCommand("device.cdrom.insert", flags, args)
-//}
-//
-//func (c ClientImpl) connectCdrom(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"vm": cloneVmName,
-//	}
-//	args := []string{"cdrom-3000"}
-//
-//	return c.runner.CliCommand("device.connect", flags, args)
-//}
-//
-//func (c ClientImpl) disconnectCdrom(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"vm": cloneVmName,
-//	}
-//	args := []string{"cdrom-3000"}
-//
-//	return c.runner.CliCommand("device.disconnect", flags, args)
-//}
-//
-//func (c ClientImpl) powerOnVm(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"on": "true",
-//	}
-//	args := []string{cloneVmName}
-//
-//	return c.runner.CliCommand("vm.power", flags, args)
-//}
-//
-//func (c ClientImpl) answerCopyQuestion(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"vm":     cloneVmName,
-//		"answer": "2",
-//	}
-//
-//	return c.runner.CliCommand("vm.question", flags, nil)
-//}
-//
-//func (c ClientImpl) stopVM(cloneVmName string) (string, error) {
-//	flags := map[string]string{
-//		"off": "true",
-//	}
-//	args := []string{cloneVmName}
-//
-//	return c.runner.CliCommand("vm.power", flags, args)
-//}
-//
-//func (c ClientImpl) destroyVm(vmName string) (string, error) {
-//	flags := map[string]string{}
-//	args := []string{vmName}
-//
-//	return c.runner.CliCommand("vm.destroy", flags, args)
-//}
-//
-//func (c ClientImpl) deleteDatastoreObject(datastorePath string) (string, error) {
-//	flags := map[string]string{
-//		"f": "true",
-//	}
-//	args := []string{datastorePath}
-//
-//	return c.runner.CliCommand("datastore.rm", flags, args)
-//}
-//
 func (c ClientImpl) vmState(vmName string) (string, error) {
 	args := []string{"list"}
 
@@ -501,116 +351,3 @@ func (c ClientImpl) vmState(vmName string) (string, error) {
 
 	return STATE_POWER_OFF, nil
 }
-
-//
-//func (c ClientImpl) datastorePathExists(datastorePath string) (bool, error) {
-//	flags := map[string]string{}
-//
-//	result, err := c.runner.CliCommand("datastore.ls", flags, nil)
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	var response []struct{ File []struct{ Path string } }
-//	err = json.Unmarshal([]byte(result), &response)
-//	if err != nil {
-//		return false, fmt.Errorf("error: %+v\nresult: %s\n", err, result)
-//	}
-//
-//	files := response[0].File
-//	found := false
-//	for i := range files {
-//		file := files[i].Path
-//		if file == datastorePath {
-//			found = true
-//			break
-//		}
-//	}
-//
-//	return found, nil
-//}
-//
-//func (c ClientImpl) createDisk(diskId string, diskMB int) (string, error) {
-//	diskPath := fmt.Sprintf(`%s.vmdk`, diskId)
-//	diskSize := fmt.Sprintf(`%dMB`, diskMB)
-//	flags := map[string]string{
-//		"size": diskSize,
-//	}
-//	args := []string{diskPath}
-//
-//	result, err := c.runner.CliCommand("datastore.disk.create", flags, args)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	return result, err
-//}
-//
-
-//
-//func (c ClientImpl) attachDisk(vmName string, diskId string) (string, error) {
-//	diskPath := fmt.Sprintf(`%s.vmdk`, diskId)
-//	flags := map[string]string{
-//		"vm":   vmName,
-//		"disk": diskPath,
-//		"link": "true",
-//	}
-//
-//	result, err := c.runner.CliCommand("vm.disk.attach", flags, nil)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	return result, nil
-//}
-//
-//func (c ClientImpl) getVMDiskName(vmName string, diskId string) (string, error) {
-//	flags := map[string]string{
-//		"json": "true",
-//		"vm":   vmName,
-//	}
-//
-//	result, err := c.runner.CliCommand("device.info", flags, nil)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	var response struct {
-//		Devices []struct {
-//			Name    string
-//			Backing struct {
-//				Parent struct {
-//					FileName string
-//				}
-//			}
-//		}
-//	}
-//	err = json.Unmarshal([]byte(result), &response)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	foundDevice := ""
-//	for _, device := range response.Devices {
-//		if strings.Contains(device.Backing.Parent.FileName, diskId) {
-//			foundDevice = device.Name
-//		}
-//	}
-//
-//	return foundDevice, nil
-//}
-//
-//func (c ClientImpl) detachDisk(vmName string, diskName string) (string, error) {
-//	flags := map[string]string{
-//		"vm":   vmName,
-//		"keep": "true",
-//	}
-//	args := []string{diskName}
-//
-//	result, err := c.runner.CliCommand("device.remove", flags, args)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	return result, nil
-//}

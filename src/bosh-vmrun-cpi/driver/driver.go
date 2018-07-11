@@ -7,7 +7,7 @@ type Client interface {
 	ImportOvf(string, string) (bool, error)
 	CloneVM(string, string) (string, error)
 	UpdateVMIso(string, string) error
-	StartVM(string) (string, error)
+	StartVM(string) error
 	HasVM(string) bool
 	SetVMNetworkAdapter(string, string, string) error
 	SetVMResources(string, int, int) error
@@ -16,7 +16,7 @@ type Client interface {
 	AttachDisk(string, string) error
 	DetachDisk(string, string) error
 	DestroyDisk(string) error
-	DestroyVM(string) (string, error)
+	DestroyVM(string) error
 	GetVMInfo(string) (VMInfo, error)
 }
 
@@ -49,6 +49,7 @@ type VmxBuilder interface {
 	AddNetworkInterface(string, string, string) error
 	SetVMResources(int, int, string) error
 	AttachDisk(string, string) error
+	DetachDisk(string, string) error
 	AttachCdrom(string, string) error
 	VMInfo(string) (VMInfo, error)
 	GetVmx(string) (*vmx.VirtualMachine, error)

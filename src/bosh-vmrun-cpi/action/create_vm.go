@@ -97,7 +97,7 @@ func (c CreateVMMethod) CreateVM(
 		return newVMCID, err
 	}
 
-	_, err = c.driverClient.UpdateVMIso(vmId, envIsoPath)
+	err = c.driverClient.UpdateVMIso(vmId, envIsoPath)
 	if err != nil {
 		return newVMCID, err
 	}

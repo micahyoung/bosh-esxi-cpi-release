@@ -110,6 +110,26 @@ var _ = Describe("VmxBuilder", func() {
 		})
 	})
 
+	Describe("DetachDisk", func() {
+		Context("when disk is attached", func() {
+			It("adds a disk entry", func() {
+				var err error
+				var vmxVM *vmx.VirtualMachine
+
+				vmxVM, err = builder.GetVmx(vmxPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(vmxVM.SCSIDevices)).To(Equal(2))
+
+				err = builder.DetachDisk("vm-virtualmachine-disk1.vmdk", vmxPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				vmxVM, err = builder.GetVmx(vmxPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(vmxVM.SCSIDevices)).To(Equal(1))
+			})
+		})
+	})
+
 	Describe("AttachCdrom", func() {
 		It("overwrites the cdrom entry", func() {
 			err := builder.AttachCdrom("/disk/path.iso", vmxPath)

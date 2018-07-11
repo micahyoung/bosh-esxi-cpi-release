@@ -68,6 +68,23 @@ func (p VmxBuilderImpl) AttachDisk(diskPath, vmxPath string) error {
 	return err
 }
 
+func (p VmxBuilderImpl) DetachDisk(diskPath string, vmxPath string) error {
+	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
+		for i, device := range vmxVM.SCSIDevices {
+			if device.Filename == diskPath {
+				//remove i
+				vmxVM.SCSIDevices = append(vmxVM.SCSIDevices[:i], vmxVM.SCSIDevices[i+1:]...)
+
+				return vmxVM
+			}
+		}
+
+		return vmxVM
+	})
+
+	return err
+}
+
 func (p VmxBuilderImpl) AttachCdrom(isoPath, vmxPath string) error {
 	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
 		newCdromDevice := vmx.IDEDevice{Device: vmx.Device{
@@ -119,7 +136,10 @@ func (p VmxBuilderImpl) VMInfo(vmxPath string) (VMInfo, error) {
 		})
 	}
 
-	sort.Slice(vmInfo.Disks, func(i, j int) bool { return vmInfo.Disks[i].ID < vmInfo.Disks[j].ID })
+	//consistently sort disks by ID/VMXID
+	sort.Slice(vmInfo.Disks, func(i, j int) bool {
+		return vmInfo.Disks[i].ID < vmInfo.Disks[j].ID
+	})
 
 	return vmInfo, nil
 }
