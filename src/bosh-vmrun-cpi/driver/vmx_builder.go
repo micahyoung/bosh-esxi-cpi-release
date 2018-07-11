@@ -2,6 +2,7 @@ package driver
 
 import (
 	"io/ioutil"
+	"sort"
 
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	"github.com/hooklift/govmx"
@@ -13,6 +14,17 @@ type VmxBuilderImpl struct {
 
 func NewVmxBuilder(logger boshlog.Logger) VmxBuilder {
 	return VmxBuilderImpl{logger: logger}
+}
+
+func (p VmxBuilderImpl) InitHardware(vmxPath string) error {
+	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
+		vmxVM.VHVEnable = true
+		vmxVM.Tools.SyncTime = true
+
+		return vmxVM
+	})
+
+	return err
 }
 
 func (p VmxBuilderImpl) AddNetworkInterface(networkName, macAddress, vmxPath string) error {
@@ -42,10 +54,30 @@ func (p VmxBuilderImpl) SetVMResources(cpu int, mem int, vmxPath string) error {
 	return err
 }
 
-func (p VmxBuilderImpl) InitHardware(vmxPath string) error {
+func (p VmxBuilderImpl) AttachDisk(diskPath, vmxPath string) error {
 	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
-		vmxVM.VHVEnable = true
-		vmxVM.Tools.SyncTime = true
+		newSCSIDevice := vmx.SCSIDevice{Device: vmx.Device{
+			Filename: diskPath,
+			Present:  true,
+		}}
+		vmxVM.SCSIDevices = append(vmxVM.SCSIDevices, newSCSIDevice)
+
+		return vmxVM
+	})
+
+	return err
+}
+
+func (p VmxBuilderImpl) AttachCdrom(isoPath, vmxPath string) error {
+	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
+		newCdromDevice := vmx.IDEDevice{Device: vmx.Device{
+			Filename: isoPath,
+			Type:     vmx.CDROM_IMAGE,
+			Present:  true,
+		}}
+		//assume all IDEDevices are this CDROM drive and clobber
+		//TODO: detect existing one or add
+		vmxVM.IDEDevices = []vmx.IDEDevice{newCdromDevice}
 
 		return vmxVM
 	})
@@ -76,6 +108,18 @@ func (p VmxBuilderImpl) VMInfo(vmxPath string) (VMInfo, error) {
 			MAC:     vmxNic.Address,
 		})
 	}
+
+	for _, scsiDevice := range vmxVM.SCSIDevices {
+		vmInfo.Disks = append(vmInfo.Disks, struct {
+			ID   string
+			Path string
+		}{
+			ID:   scsiDevice.VMXID,
+			Path: scsiDevice.Filename,
+		})
+	}
+
+	sort.Slice(vmInfo.Disks, func(i, j int) bool { return vmInfo.Disks[i].ID < vmInfo.Disks[j].ID })
 
 	return vmInfo, nil
 }

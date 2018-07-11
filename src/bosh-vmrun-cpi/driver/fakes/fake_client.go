@@ -35,19 +35,17 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	UpdateVMIsoStub        func(string, string) (string, error)
+	UpdateVMIsoStub        func(string, string) error
 	updateVMIsoMutex       sync.RWMutex
 	updateVMIsoArgsForCall []struct {
 		arg1 string
 		arg2 string
 	}
 	updateVMIsoReturns struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	updateVMIsoReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	StartVMStub        func(string) (string, error)
 	startVMMutex       sync.RWMutex
@@ -292,7 +290,7 @@ func (fake *FakeClient) CloneVMReturnsOnCall(i int, result1 string, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeClient) UpdateVMIso(arg1 string, arg2 string) (string, error) {
+func (fake *FakeClient) UpdateVMIso(arg1 string, arg2 string) error {
 	fake.updateVMIsoMutex.Lock()
 	ret, specificReturn := fake.updateVMIsoReturnsOnCall[len(fake.updateVMIsoArgsForCall)]
 	fake.updateVMIsoArgsForCall = append(fake.updateVMIsoArgsForCall, struct {
@@ -305,9 +303,9 @@ func (fake *FakeClient) UpdateVMIso(arg1 string, arg2 string) (string, error) {
 		return fake.UpdateVMIsoStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fake.updateVMIsoReturns.result1, fake.updateVMIsoReturns.result2
+	return fake.updateVMIsoReturns.result1
 }
 
 func (fake *FakeClient) UpdateVMIsoCallCount() int {
@@ -322,26 +320,23 @@ func (fake *FakeClient) UpdateVMIsoArgsForCall(i int) (string, string) {
 	return fake.updateVMIsoArgsForCall[i].arg1, fake.updateVMIsoArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) UpdateVMIsoReturns(result1 string, result2 error) {
+func (fake *FakeClient) UpdateVMIsoReturns(result1 error) {
 	fake.UpdateVMIsoStub = nil
 	fake.updateVMIsoReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) UpdateVMIsoReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) UpdateVMIsoReturnsOnCall(i int, result1 error) {
 	fake.UpdateVMIsoStub = nil
 	if fake.updateVMIsoReturnsOnCall == nil {
 		fake.updateVMIsoReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
+			result1 error
 		})
 	}
 	fake.updateVMIsoReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) StartVM(arg1 string) (string, error) {

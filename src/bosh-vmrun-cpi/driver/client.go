@@ -2,6 +2,7 @@ package driver
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,11 +12,12 @@ import (
 )
 
 type ClientImpl struct {
-	config        Config
-	vmrunRunner   VmrunRunner
-	ovftoolRunner OvftoolRunner
-	vmxBuilder    VmxBuilder
-	logger        boshlog.Logger
+	config             Config
+	vmrunRunner        VmrunRunner
+	ovftoolRunner      OvftoolRunner
+	vmxBuilder         VmxBuilder
+	vdiskmanagerRunner VdiskmanagerRunner
+	logger             boshlog.Logger
 }
 
 var (
@@ -25,12 +27,39 @@ var (
 	STATE_BLOCKING_QUESTION = "state-blocking-question"
 )
 
-func NewClient(vmrunRunner VmrunRunner, ovftoolRunner OvftoolRunner, vmxBuilder VmxBuilder, config Config, logger boshlog.Logger) Client {
-	return ClientImpl{vmrunRunner: vmrunRunner, ovftoolRunner: ovftoolRunner, vmxBuilder: vmxBuilder, config: config, logger: logger}
+func NewClient(vmrunRunner VmrunRunner, ovftoolRunner OvftoolRunner, vdiskmanagerRunner VdiskmanagerRunner, vmxBuilder VmxBuilder, config Config, logger boshlog.Logger) Client {
+	return ClientImpl{vmrunRunner: vmrunRunner, ovftoolRunner: ovftoolRunner, vdiskmanagerRunner: vdiskmanagerRunner, vmxBuilder: vmxBuilder, config: config, logger: logger}
 }
 
 func (c ClientImpl) vmxPath(vmName string) string {
 	return filepath.Join(c.config.VmPath(), fmt.Sprintf("%s.vmwarevm", vmName), fmt.Sprintf("%s.vmx", vmName))
+}
+
+func (c ClientImpl) ephemeralDiskPath(vmName string) string {
+	baseDir := filepath.Join(c.config.VmPath(), "ephemeral-disks")
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+		os.MkdirAll(baseDir, 0755)
+	}
+
+	return filepath.Join(baseDir, fmt.Sprintf("%s.vmdk", vmName))
+}
+
+func (c ClientImpl) persistentDiskPath(diskId string) string {
+	baseDir := filepath.Join(c.config.VmPath(), "persistent-disks")
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+		os.MkdirAll(baseDir, 0755)
+	}
+
+	return filepath.Join(baseDir, fmt.Sprintf("%s.vmdk", diskId))
+}
+
+func (c ClientImpl) envIsoPath(vmName string) string {
+	baseDir := filepath.Join(c.config.VmPath(), "env-isos")
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+		os.MkdirAll(baseDir, 0755)
+	}
+
+	return filepath.Join(baseDir, fmt.Sprintf("%s.iso", vmName))
 }
 
 func (c ClientImpl) ImportOvf(ovfPath string, vmName string) (bool, error) {
@@ -91,43 +120,28 @@ func (c ClientImpl) SetVMResources(vmName string, cpus int, ram int) error {
 	return nil
 }
 
-func (c ClientImpl) UpdateVMIso(vmName string, localIsoPath string) (string, error) {
-	var result string
+func (c ClientImpl) UpdateVMIso(vmName string, localIsoPath string) error {
 	var err error
 
-	//result, err := c.disconnectCdrom(vmName)
+	isoBytes, err := ioutil.ReadFile(localIsoPath)
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "connecting ENV cdrom", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("driver", "reading generated iso", err)
+		return err
 	}
 
-	//result, err = c.ejectCdrom(vmName)
+	err = ioutil.WriteFile(c.envIsoPath(vmName), isoBytes, 0644)
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "ejecting ENV cdrom", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("driver", "writing vm iso contents", err)
+		return err
 	}
 
-	datastoreIsoPath := fmt.Sprintf("/env/env-%s.iso", vmName)
-	_ = datastoreIsoPath
-	//result, err = c.upload(vmName, localIsoPath, datastoreIsoPath)
+	err = c.vmxBuilder.AttachCdrom(c.envIsoPath(vmName), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "uploading ENV cdrom", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("govc", "connecting ENV cdrom", err)
+		return err
 	}
 
-	//result, err = c.insertCdrom(vmName, datastoreIsoPath)
-	if err != nil {
-		c.logger.ErrorWithDetails("govc", "inserting ENV cdrom", err, result)
-		return result, err
-	}
-
-	//result, err = c.connectCdrom(vmName)
-	if err != nil {
-		c.logger.ErrorWithDetails("govc", "connecting ENV cdrom", err, result)
-		return result, err
-	}
-
-	return result, nil
+	return nil
 }
 
 func (c ClientImpl) StartVM(vmName string) (string, error) {
@@ -170,6 +184,7 @@ func (c ClientImpl) waitForVMStart(vmName string) (string, error) {
 
 func (c ClientImpl) startVM(vmName string) (string, error) {
 	args := []string{"start", c.vmxPath(vmName), "nogui"}
+	//args := []string{"start", c.vmxPath(vmName)}
 
 	return c.vmrunRunner.CliCommand(args, nil)
 }
@@ -183,36 +198,40 @@ func (c ClientImpl) HasVM(vmName string) bool {
 }
 
 func (c ClientImpl) CreateEphemeralDisk(vmName string, diskMB int) error {
-	var result string
 	var err error
 
-	//result, err := c.createEphemeralDisk(vmName, diskMB)
+	err = c.vdiskmanagerRunner.CreateDisk(c.ephemeralDiskPath(vmName), diskMB)
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "CreateEphemeralDisk", err, result)
+		c.logger.ErrorWithDetails("driver", "CreateEphemeralDisk create", err)
 		return err
 	}
+
+	err = c.vmxBuilder.AttachDisk(c.ephemeralDiskPath(vmName), c.vmxPath(vmName))
+	if err != nil {
+		c.logger.ErrorWithDetails("driver", "CreateEphemeralDisk attach", err)
+		return err
+	}
+
 	return nil
 }
 
 func (c ClientImpl) CreateDisk(diskId string, diskMB int) error {
-	var result string
 	var err error
 
-	//result, err := c.createDisk(diskId, diskMB)
+	err = c.vdiskmanagerRunner.CreateDisk(c.persistentDiskPath(diskId), diskMB)
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "CreateDisk", err, result)
+		c.logger.ErrorWithDetails("driver", "CreateDisk", err)
 		return err
 	}
 	return nil
 }
 
 func (c ClientImpl) AttachDisk(vmName string, diskId string) error {
-	var result string
 	var err error
 
-	//result, err := c.attachDisk(vmName, diskId)
+	err = c.vmxBuilder.AttachDisk(c.persistentDiskPath(diskId), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "AttachDisk", err, result)
+		c.logger.ErrorWithDetails("govc", "AttachDisk", err)
 		return err
 	}
 	return nil
@@ -527,22 +546,7 @@ func (c ClientImpl) vmState(vmName string) (string, error) {
 //	return result, err
 //}
 //
-//func (c ClientImpl) createEphemeralDisk(vmName string, diskMB int) (string, error) {
-//	diskPath := fmt.Sprintf(`%s/ephemeral.vmdk`, vmName)
-//	diskSize := fmt.Sprintf(`%dMB`, diskMB)
-//	flags := map[string]string{
-//		"vm":   vmName,
-//		"name": diskPath,
-//		"size": diskSize,
-//	}
-//
-//	result, err := c.runner.CliCommand("vm.disk.create", flags, nil)
-//	if err != nil {
-//		return result, err
-//	}
-//
-//	return result, nil
-//}
+
 //
 //func (c ClientImpl) attachDisk(vmName string, diskId string) (string, error) {
 //	diskPath := fmt.Sprintf(`%s.vmdk`, diskId)

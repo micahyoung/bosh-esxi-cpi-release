@@ -46,6 +46,30 @@ type FakeVmxBuilder struct {
 	setVMResourcesReturnsOnCall map[int]struct {
 		result1 error
 	}
+	AttachDiskStub        func(string, string) error
+	attachDiskMutex       sync.RWMutex
+	attachDiskArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	attachDiskReturns struct {
+		result1 error
+	}
+	attachDiskReturnsOnCall map[int]struct {
+		result1 error
+	}
+	AttachCdromStub        func(string, string) error
+	attachCdromMutex       sync.RWMutex
+	attachCdromArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	attachCdromReturns struct {
+		result1 error
+	}
+	attachCdromReturnsOnCall map[int]struct {
+		result1 error
+	}
 	VMInfoStub        func(string) (driver.VMInfo, error)
 	vMInfoMutex       sync.RWMutex
 	vMInfoArgsForCall []struct {
@@ -224,6 +248,104 @@ func (fake *FakeVmxBuilder) SetVMResourcesReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeVmxBuilder) AttachDisk(arg1 string, arg2 string) error {
+	fake.attachDiskMutex.Lock()
+	ret, specificReturn := fake.attachDiskReturnsOnCall[len(fake.attachDiskArgsForCall)]
+	fake.attachDiskArgsForCall = append(fake.attachDiskArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("AttachDisk", []interface{}{arg1, arg2})
+	fake.attachDiskMutex.Unlock()
+	if fake.AttachDiskStub != nil {
+		return fake.AttachDiskStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.attachDiskReturns.result1
+}
+
+func (fake *FakeVmxBuilder) AttachDiskCallCount() int {
+	fake.attachDiskMutex.RLock()
+	defer fake.attachDiskMutex.RUnlock()
+	return len(fake.attachDiskArgsForCall)
+}
+
+func (fake *FakeVmxBuilder) AttachDiskArgsForCall(i int) (string, string) {
+	fake.attachDiskMutex.RLock()
+	defer fake.attachDiskMutex.RUnlock()
+	return fake.attachDiskArgsForCall[i].arg1, fake.attachDiskArgsForCall[i].arg2
+}
+
+func (fake *FakeVmxBuilder) AttachDiskReturns(result1 error) {
+	fake.AttachDiskStub = nil
+	fake.attachDiskReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeVmxBuilder) AttachDiskReturnsOnCall(i int, result1 error) {
+	fake.AttachDiskStub = nil
+	if fake.attachDiskReturnsOnCall == nil {
+		fake.attachDiskReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.attachDiskReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeVmxBuilder) AttachCdrom(arg1 string, arg2 string) error {
+	fake.attachCdromMutex.Lock()
+	ret, specificReturn := fake.attachCdromReturnsOnCall[len(fake.attachCdromArgsForCall)]
+	fake.attachCdromArgsForCall = append(fake.attachCdromArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("AttachCdrom", []interface{}{arg1, arg2})
+	fake.attachCdromMutex.Unlock()
+	if fake.AttachCdromStub != nil {
+		return fake.AttachCdromStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.attachCdromReturns.result1
+}
+
+func (fake *FakeVmxBuilder) AttachCdromCallCount() int {
+	fake.attachCdromMutex.RLock()
+	defer fake.attachCdromMutex.RUnlock()
+	return len(fake.attachCdromArgsForCall)
+}
+
+func (fake *FakeVmxBuilder) AttachCdromArgsForCall(i int) (string, string) {
+	fake.attachCdromMutex.RLock()
+	defer fake.attachCdromMutex.RUnlock()
+	return fake.attachCdromArgsForCall[i].arg1, fake.attachCdromArgsForCall[i].arg2
+}
+
+func (fake *FakeVmxBuilder) AttachCdromReturns(result1 error) {
+	fake.AttachCdromStub = nil
+	fake.attachCdromReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeVmxBuilder) AttachCdromReturnsOnCall(i int, result1 error) {
+	fake.AttachCdromStub = nil
+	if fake.attachCdromReturnsOnCall == nil {
+		fake.attachCdromReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.attachCdromReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeVmxBuilder) VMInfo(arg1 string) (driver.VMInfo, error) {
 	fake.vMInfoMutex.Lock()
 	ret, specificReturn := fake.vMInfoReturnsOnCall[len(fake.vMInfoArgsForCall)]
@@ -335,6 +457,10 @@ func (fake *FakeVmxBuilder) Invocations() map[string][][]interface{} {
 	defer fake.addNetworkInterfaceMutex.RUnlock()
 	fake.setVMResourcesMutex.RLock()
 	defer fake.setVMResourcesMutex.RUnlock()
+	fake.attachDiskMutex.RLock()
+	defer fake.attachDiskMutex.RUnlock()
+	fake.attachCdromMutex.RLock()
+	defer fake.attachCdromMutex.RUnlock()
 	fake.vMInfoMutex.RLock()
 	defer fake.vMInfoMutex.RUnlock()
 	fake.getVmxMutex.RLock()

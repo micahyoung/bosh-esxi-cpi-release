@@ -20,6 +20,10 @@ func (c ConfigImpl) VmrunPath() string {
 	return c.cpiConfig.Cloud.Properties.Vmrun.Vmrun_Bin_Path
 }
 
+func (c ConfigImpl) VdiskmanagerPath() string {
+	return c.cpiConfig.Cloud.Properties.Vmrun.Vdiskmanager_Bin_Path
+}
+
 func (c ConfigImpl) VmPath() string {
 	return c.cpiConfig.Cloud.Properties.Vmrun.Vm_Store_Path
 }

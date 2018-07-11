@@ -14,6 +14,7 @@ import (
 var _ = Describe("DriverClient", func() {
 	var vmrunRunner *fakedriver.FakeVmrunRunner
 	var ovftoolRunner *fakedriver.FakeOvftoolRunner
+	var vdiskmanagerRunner *fakedriver.FakeVdiskmanagerRunner
 	var vmxBuilder *fakedriver.FakeVmxBuilder
 	var config *fakedriver.FakeConfig
 	var logger *fakelogger.FakeLogger
@@ -21,6 +22,7 @@ var _ = Describe("DriverClient", func() {
 	BeforeEach(func() {
 		vmrunRunner = &fakedriver.FakeVmrunRunner{}
 		ovftoolRunner = &fakedriver.FakeOvftoolRunner{}
+		vdiskmanagerRunner = &fakedriver.FakeVdiskmanagerRunner{}
 		vmxBuilder = &fakedriver.FakeVmxBuilder{}
 		config = &fakedriver.FakeConfig{}
 		logger = &fakelogger.FakeLogger{}
@@ -29,7 +31,7 @@ var _ = Describe("DriverClient", func() {
 	Describe("ImportOvf", func() {
 		It("runs the driver command", func() {
 			config.VmPathReturns("vm-path")
-			client := driver.NewClient(vmrunRunner, ovftoolRunner, vmxBuilder, config, logger)
+			client := driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, config, logger)
 			ovfPath := "ovf-path"
 			stemcellId := "stemcell-uuid"
 

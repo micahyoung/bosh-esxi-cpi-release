@@ -6,7 +6,7 @@ import "github.com/hooklift/govmx"
 type Client interface {
 	ImportOvf(string, string) (bool, error)
 	CloneVM(string, string) (string, error)
-	UpdateVMIso(string, string) (string, error)
+	UpdateVMIso(string, string) error
 	StartVM(string) (string, error)
 	HasVM(string) bool
 	SetVMNetworkAdapter(string, string, string) error
@@ -24,6 +24,7 @@ type Client interface {
 type Config interface {
 	OvftoolPath() string
 	VmrunPath() string
+	VdiskmanagerPath() string
 	VmPath() string
 }
 
@@ -37,11 +38,18 @@ type OvftoolRunner interface {
 	CliCommand([]string, map[string]string) (string, error)
 }
 
+//go:generate counterfeiter -o fakes/fake_vdiskmanager_runner.go $GOPATH/src/bosh-vmrun-cpi/driver/driver.go VdiskmanagerRunner
+type VdiskmanagerRunner interface {
+	CreateDisk(string, int) error
+}
+
 //go:generate counterfeiter -o fakes/fake_vmx_builder.go $GOPATH/src/bosh-vmrun-cpi/driver/driver.go VmxBuilder
 type VmxBuilder interface {
 	InitHardware(string) error
 	AddNetworkInterface(string, string, string) error
 	SetVMResources(int, int, string) error
+	AttachDisk(string, string) error
+	AttachCdrom(string, string) error
 	VMInfo(string) (VMInfo, error)
 	GetVmx(string) (*vmx.VirtualMachine, error)
 }
@@ -55,5 +63,7 @@ type VMInfo struct {
 		MAC     string
 	}
 	Disks []struct {
+		ID   string
+		Path string
 	}
 }

@@ -4,7 +4,7 @@ set -o pipefail
 
 ovftool="$OVFTOOL_BIN_PATH"
 vmrun="$VMRUN_BIN_PATH"
-stemcell_vmx="/tmp/vmtest/stemcell.vmwarevm/stemcell.vmx"
+stemcell_vmx="$(dirname $0)/test/fixtures/test.vmx"
 
 "$vmrun" list | grep vm-store-path | while read file; do
   if ! [ -f $file ]; then

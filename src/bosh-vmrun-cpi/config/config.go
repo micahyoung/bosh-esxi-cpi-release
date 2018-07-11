@@ -24,9 +24,10 @@ type CPIProperties struct {
 }
 
 type Vmrun struct {
-	Vm_Store_Path    string
-	Vmrun_Bin_Path   string
-	Ovftool_Bin_Path string
+	Vm_Store_Path         string
+	Vmrun_Bin_Path        string
+	Vdiskmanager_Bin_Path string
+	Ovftool_Bin_Path      string
 }
 
 type Vcenter struct {

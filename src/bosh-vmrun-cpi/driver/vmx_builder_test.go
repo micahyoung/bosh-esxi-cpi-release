@@ -3,6 +3,7 @@ package driver_test
 import (
 	"io/ioutil"
 	"os"
+	"sort"
 
 	"github.com/hooklift/govmx"
 	. "github.com/onsi/ginkgo"
@@ -54,11 +55,11 @@ var _ = Describe("VmxBuilder", func() {
 			err := builder.InitHardware(vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			vmxVm, err := builder.GetVmx(vmxPath)
+			vmxVM, err := builder.GetVmx(vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(vmxVm.VHVEnable).To(BeTrue())
-			Expect(vmxVm.Tools.SyncTime).To(BeTrue())
+			Expect(vmxVM.VHVEnable).To(BeTrue())
+			Expect(vmxVM.Tools.SyncTime).To(BeTrue())
 		})
 	})
 
@@ -67,14 +68,14 @@ var _ = Describe("VmxBuilder", func() {
 			err := builder.AddNetworkInterface("fooNetwork", "00:11:22:33:44:55", vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			vmxVm, err := builder.GetVmx(vmxPath)
+			vmxVM, err := builder.GetVmx(vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(vmxVm.Ethernet[0].VNetwork).To(Equal("fooNetwork"))
-			Expect(vmxVm.Ethernet[0].Address).To(Equal("00:11:22:33:44:55"))
-			Expect(vmxVm.Ethernet[0].AddressType).To(Equal(vmx.EthernetAddressType("static")))
-			Expect(vmxVm.Ethernet[0].VirtualDev).To(Equal("vmxnet3"))
-			Expect(vmxVm.Ethernet[0].Present).To(BeTrue())
+			Expect(vmxVM.Ethernet[0].VNetwork).To(Equal("fooNetwork"))
+			Expect(vmxVM.Ethernet[0].Address).To(Equal("00:11:22:33:44:55"))
+			Expect(vmxVM.Ethernet[0].AddressType).To(Equal(vmx.EthernetAddressType("static")))
+			Expect(vmxVM.Ethernet[0].VirtualDev).To(Equal("vmxnet3"))
+			Expect(vmxVM.Ethernet[0].Present).To(BeTrue())
 		})
 	})
 
@@ -83,11 +84,43 @@ var _ = Describe("VmxBuilder", func() {
 			err := builder.SetVMResources(2, 4096, vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			vmxVm, err := builder.GetVmx(vmxPath)
+			vmxVM, err := builder.GetVmx(vmxPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(vmxVm.NumvCPUs).To(Equal(uint(2)))
-			Expect(vmxVm.Memsize).To(Equal(uint(4096)))
+			Expect(vmxVM.NumvCPUs).To(Equal(uint(2)))
+			Expect(vmxVM.Memsize).To(Equal(uint(4096)))
+		})
+	})
+
+	Describe("AttachDisk", func() {
+		It("adds a disk entry", func() {
+			err := builder.AttachDisk("/disk/path.vmdk", vmxPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			vmxVM, err := builder.GetVmx(vmxPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			disks := vmxVM.SCSIDevices
+			sort.Slice(disks, func(i, j int) bool { return disks[i].VMXID < disks[j].VMXID })
+
+			Expect(disks[1].Filename).To(Equal("vm-virtualmachine-disk1.vmdk"))
+			Expect(disks[1].Present).To(BeTrue())
+			Expect(disks[2].Filename).To(Equal("/disk/path.vmdk"))
+			Expect(disks[2].Present).To(BeTrue())
+		})
+	})
+
+	Describe("AttachCdrom", func() {
+		It("overwrites the cdrom entry", func() {
+			err := builder.AttachCdrom("/disk/path.iso", vmxPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			vmxVM, err := builder.GetVmx(vmxPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(vmxVM.IDEDevices[0].Filename).To(Equal("/disk/path.iso"))
+			Expect(vmxVM.IDEDevices[0].Type).To(Equal(vmx.CDROM_IMAGE))
+			Expect(vmxVM.IDEDevices[0].Present).To(BeTrue())
 		})
 	})
 })

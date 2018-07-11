@@ -25,6 +25,15 @@ type FakeConfig struct {
 	vmrunPathReturnsOnCall map[int]struct {
 		result1 string
 	}
+	VdiskmanagerPathStub        func() string
+	vdiskmanagerPathMutex       sync.RWMutex
+	vdiskmanagerPathArgsForCall []struct{}
+	vdiskmanagerPathReturns     struct {
+		result1 string
+	}
+	vdiskmanagerPathReturnsOnCall map[int]struct {
+		result1 string
+	}
 	VmPathStub        func() string
 	vmPathMutex       sync.RWMutex
 	vmPathArgsForCall []struct{}
@@ -118,6 +127,46 @@ func (fake *FakeConfig) VmrunPathReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
+func (fake *FakeConfig) VdiskmanagerPath() string {
+	fake.vdiskmanagerPathMutex.Lock()
+	ret, specificReturn := fake.vdiskmanagerPathReturnsOnCall[len(fake.vdiskmanagerPathArgsForCall)]
+	fake.vdiskmanagerPathArgsForCall = append(fake.vdiskmanagerPathArgsForCall, struct{}{})
+	fake.recordInvocation("VdiskmanagerPath", []interface{}{})
+	fake.vdiskmanagerPathMutex.Unlock()
+	if fake.VdiskmanagerPathStub != nil {
+		return fake.VdiskmanagerPathStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.vdiskmanagerPathReturns.result1
+}
+
+func (fake *FakeConfig) VdiskmanagerPathCallCount() int {
+	fake.vdiskmanagerPathMutex.RLock()
+	defer fake.vdiskmanagerPathMutex.RUnlock()
+	return len(fake.vdiskmanagerPathArgsForCall)
+}
+
+func (fake *FakeConfig) VdiskmanagerPathReturns(result1 string) {
+	fake.VdiskmanagerPathStub = nil
+	fake.vdiskmanagerPathReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeConfig) VdiskmanagerPathReturnsOnCall(i int, result1 string) {
+	fake.VdiskmanagerPathStub = nil
+	if fake.vdiskmanagerPathReturnsOnCall == nil {
+		fake.vdiskmanagerPathReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.vdiskmanagerPathReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeConfig) VmPath() string {
 	fake.vmPathMutex.Lock()
 	ret, specificReturn := fake.vmPathReturnsOnCall[len(fake.vmPathArgsForCall)]
@@ -165,6 +214,8 @@ func (fake *FakeConfig) Invocations() map[string][][]interface{} {
 	defer fake.ovftoolPathMutex.RUnlock()
 	fake.vmrunPathMutex.RLock()
 	defer fake.vmrunPathMutex.RUnlock()
+	fake.vdiskmanagerPathMutex.RLock()
+	defer fake.vdiskmanagerPathMutex.RUnlock()
 	fake.vmPathMutex.RLock()
 	defer fake.vmPathMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

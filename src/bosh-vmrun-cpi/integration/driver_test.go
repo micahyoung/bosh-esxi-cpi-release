@@ -28,14 +28,16 @@ var _ = Describe("Driver", func() {
 		config := driver.NewConfig(cpiConfig)
 		vmrunRunner := driver.NewVmrunRunner(config.VmrunPath(), logger)
 		ovftoolRunner := driver.NewOvftoolRunner(config.OvftoolPath(), logger)
+		vdiskmanagerRunner := driver.NewVdiskmanagerRunner(config.VdiskmanagerPath(), logger)
 		vmxBuilder := driver.NewVmxBuilder(logger)
-		client = driver.NewClient(vmrunRunner, ovftoolRunner, vmxBuilder, config, logger)
+		client = driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, config, logger)
 	})
 
 	AfterEach(func() {
+		//DestroyDisk
 		//if client.HasVM(vmId) {
-		//_, err := client.DestroyVM(vmId)
-		//Expect(err).ToNot(HaveOccurred())
+		//	_, err := client.DestroyVM(vmId)
+		//	Expect(err).ToNot(HaveOccurred())
 		//}
 	})
 
@@ -80,25 +82,29 @@ var _ = Describe("Driver", func() {
 			Expect(vmInfo.CPUs).To(Equal(2))
 			Expect(vmInfo.RAM).To(Equal(1024))
 
-			_, err = client.StartVM(vmId)
+			err = client.CreateEphemeralDisk(vmId, 2048)
 			Expect(err).ToNot(HaveOccurred())
 
-			//err = client.CreateEphemeralDisk(vmId, 2048)
-			//Expect(err).ToNot(HaveOccurred())
+			vmInfo, err = client.GetVMInfo(vmId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(vmInfo.Disks[2].Path).To(HaveSuffix("ephemeral-disks/vm-virtualmachine.vmdk"))
 
-			//err = client.CreateDisk("disk-1", 3096)
-			//Expect(err).ToNot(HaveOccurred())
+			err = client.CreateDisk("disk-1", 3096)
+			Expect(err).ToNot(HaveOccurred())
 
-			//err = client.AttachDisk(vmId, "disk-1")
-			//Expect(err).ToNot(HaveOccurred())
+			err = client.AttachDisk(vmId, "disk-1")
+			Expect(err).ToNot(HaveOccurred())
 
-			//envIsoPath := "../test/fixtures/env.iso"
-			//result, err = client.UpdateVMIso(vmId, envIsoPath)
-			//Expect(err).ToNot(HaveOccurred())
+			vmInfo, err = client.GetVMInfo(vmId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(vmInfo.Disks[3].Path).To(HaveSuffix("persistent-disks/disk-1.vmdk"))
 
-			//result, err = client.StartVM(vmId)
-			//Expect(err).ToNot(HaveOccurred())
-			//Expect(result).To(Equal("success"))
+			envIsoPath := "../test/fixtures/env.iso"
+			err = client.UpdateVMIso(vmId, envIsoPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = client.StartVM(vmId)
+			Expect(err).ToNot(HaveOccurred())
 
 			//time.Sleep(1 * time.Second)
 
@@ -140,7 +146,7 @@ var _ = Describe("Driver", func() {
 			Expect(success).To(Equal(true))
 
 			envIsoPath := "../test/fixtures/env.iso"
-			result, err = client.UpdateVMIso(vmId, envIsoPath)
+			err = client.UpdateVMIso(vmId, envIsoPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			result, err = client.DestroyVM(vmId)
