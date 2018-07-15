@@ -8,6 +8,7 @@ type Client interface {
 	CloneVM(string, string) (string, error)
 	UpdateVMIso(string, string) error
 	StartVM(string) error
+	StopVM(string) error
 	HasVM(string) bool
 	SetVMNetworkAdapter(string, string, string) error
 	SetVMResources(string, int, int) error

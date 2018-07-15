@@ -3,6 +3,7 @@ package driver
 import (
 	"io/ioutil"
 	"sort"
+	"time"
 
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	"github.com/hooklift/govmx"
@@ -30,11 +31,12 @@ func (p VmxBuilderImpl) InitHardware(vmxPath string) error {
 func (p VmxBuilderImpl) AddNetworkInterface(networkName, macAddress, vmxPath string) error {
 	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
 		vmxVM.Ethernet = append(vmxVM.Ethernet, vmx.Ethernet{
-			VNetwork:    networkName,
-			Address:     macAddress,
-			AddressType: "static",
-			VirtualDev:  "vmxnet3",
-			Present:     true,
+			VNetwork:       networkName,
+			Address:        macAddress,
+			AddressType:    "static",
+			VirtualDev:     "vmxnet3",
+			ConnectionType: "custom",
+			Present:        true,
 		})
 
 		return vmxVM
@@ -88,9 +90,10 @@ func (p VmxBuilderImpl) DetachDisk(diskPath string, vmxPath string) error {
 func (p VmxBuilderImpl) AttachCdrom(isoPath, vmxPath string) error {
 	err := p.replaceVmx(vmxPath, func(vmxVM *vmx.VirtualMachine) *vmx.VirtualMachine {
 		newCdromDevice := vmx.IDEDevice{Device: vmx.Device{
-			Filename: isoPath,
-			Type:     vmx.CDROM_IMAGE,
-			Present:  true,
+			Filename:       isoPath,
+			Type:           vmx.CDROM_IMAGE,
+			StartConnected: true,
+			Present:        true,
 		}}
 		//assume all IDEDevices are this CDROM drive and clobber
 		//TODO: detect existing one or add
@@ -154,7 +157,9 @@ func (p VmxBuilderImpl) replaceVmx(vmxPath string, vmUpdateFunc func(*vmx.Virtua
 		return err
 	}
 
+	time.Sleep(5 * time.Second)
 	vmxVM = vmUpdateFunc(vmxVM)
+	time.Sleep(5 * time.Second)
 
 	err = p.writeVmx(vmxVM, vmxPath)
 	if err != nil {

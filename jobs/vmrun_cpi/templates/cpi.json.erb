@@ -20,7 +20,7 @@
   }
 
   if_p("vmrun") do
-    params["vmrun"] = p("vmrun")
+    params["cloud"]["properties"]["vmrun"] = p("vmrun")
   end
 
   params["cloud"]["properties"]["vcenters"].each do |vcenter|

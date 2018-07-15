@@ -47,18 +47,16 @@ type FakeClient struct {
 	updateVMIsoReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StartVMStub        func(string) (string, error)
+	StartVMStub        func(string) error
 	startVMMutex       sync.RWMutex
 	startVMArgsForCall []struct {
 		arg1 string
 	}
 	startVMReturns struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	startVMReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	HasVMStub        func(string) bool
 	hasVMMutex       sync.RWMutex
@@ -156,18 +154,16 @@ type FakeClient struct {
 	destroyDiskReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DestroyVMStub        func(string) (string, error)
+	DestroyVMStub        func(string) error
 	destroyVMMutex       sync.RWMutex
 	destroyVMArgsForCall []struct {
 		arg1 string
 	}
 	destroyVMReturns struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	destroyVMReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	GetVMInfoStub        func(string) (driver.VMInfo, error)
 	getVMInfoMutex       sync.RWMutex
@@ -339,7 +335,7 @@ func (fake *FakeClient) UpdateVMIsoReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) StartVM(arg1 string) (string, error) {
+func (fake *FakeClient) StartVM(arg1 string) error {
 	fake.startVMMutex.Lock()
 	ret, specificReturn := fake.startVMReturnsOnCall[len(fake.startVMArgsForCall)]
 	fake.startVMArgsForCall = append(fake.startVMArgsForCall, struct {
@@ -351,9 +347,9 @@ func (fake *FakeClient) StartVM(arg1 string) (string, error) {
 		return fake.StartVMStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fake.startVMReturns.result1, fake.startVMReturns.result2
+	return fake.startVMReturns.result1
 }
 
 func (fake *FakeClient) StartVMCallCount() int {
@@ -368,26 +364,23 @@ func (fake *FakeClient) StartVMArgsForCall(i int) string {
 	return fake.startVMArgsForCall[i].arg1
 }
 
-func (fake *FakeClient) StartVMReturns(result1 string, result2 error) {
+func (fake *FakeClient) StartVMReturns(result1 error) {
 	fake.StartVMStub = nil
 	fake.startVMReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) StartVMReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) StartVMReturnsOnCall(i int, result1 error) {
 	fake.StartVMStub = nil
 	if fake.startVMReturnsOnCall == nil {
 		fake.startVMReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
+			result1 error
 		})
 	}
 	fake.startVMReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) HasVM(arg1 string) bool {
@@ -782,7 +775,7 @@ func (fake *FakeClient) DestroyDiskReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) DestroyVM(arg1 string) (string, error) {
+func (fake *FakeClient) DestroyVM(arg1 string) error {
 	fake.destroyVMMutex.Lock()
 	ret, specificReturn := fake.destroyVMReturnsOnCall[len(fake.destroyVMArgsForCall)]
 	fake.destroyVMArgsForCall = append(fake.destroyVMArgsForCall, struct {
@@ -794,9 +787,9 @@ func (fake *FakeClient) DestroyVM(arg1 string) (string, error) {
 		return fake.DestroyVMStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fake.destroyVMReturns.result1, fake.destroyVMReturns.result2
+	return fake.destroyVMReturns.result1
 }
 
 func (fake *FakeClient) DestroyVMCallCount() int {
@@ -811,26 +804,23 @@ func (fake *FakeClient) DestroyVMArgsForCall(i int) string {
 	return fake.destroyVMArgsForCall[i].arg1
 }
 
-func (fake *FakeClient) DestroyVMReturns(result1 string, result2 error) {
+func (fake *FakeClient) DestroyVMReturns(result1 error) {
 	fake.DestroyVMStub = nil
 	fake.destroyVMReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) DestroyVMReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) DestroyVMReturnsOnCall(i int, result1 error) {
 	fake.DestroyVMStub = nil
 	if fake.destroyVMReturnsOnCall == nil {
 		fake.destroyVMReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
+			result1 error
 		})
 	}
 	fake.destroyVMReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) GetVMInfo(arg1 string) (driver.VMInfo, error) {

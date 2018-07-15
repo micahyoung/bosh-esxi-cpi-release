@@ -13,7 +13,8 @@ type VmrunRunnerImpl struct {
 }
 
 func NewVmrunRunner(vmrunBinPath string, logger boshlog.Logger) VmrunRunner {
-	//TODO: check that vmrun is on the path
+	logger.DebugWithDetails("vmrun-runner", "bin: %+s", vmrunBinPath)
+
 	return &VmrunRunnerImpl{vmrunBinPath: vmrunBinPath, logger: logger}
 }
 

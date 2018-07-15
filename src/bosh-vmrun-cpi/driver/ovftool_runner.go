@@ -13,8 +13,8 @@ type OvftoolRunnerImpl struct {
 }
 
 func NewOvftoolRunner(ovftoolBinPath string, logger boshlog.Logger) OvftoolRunner {
-	//TODO: check that ovftool is on the path
-	//https://my.vmware.com/group/vmware/details?downloadGroup=OVFTOOL430&productId=742
+	logger.DebugWithDetails("ovftool-runner", "bin: %+s", ovftoolBinPath)
+
 	return &OvftoolRunnerImpl{ovftoolBinPath: ovftoolBinPath, logger: logger}
 }
 
@@ -25,7 +25,7 @@ func (c OvftoolRunnerImpl) CliCommand(args []string, flagMap map[string]string) 
 	}
 	commandArgs = append(commandArgs, args...)
 
-	c.logger.Debug("ovftool-runner", fmt.Sprintf("%+v", commandArgs))
+	c.logger.DebugWithDetails("ovftool-runner", "args: %+v", commandArgs)
 
 	command := exec.Command(c.ovftoolBinPath, commandArgs...)
 

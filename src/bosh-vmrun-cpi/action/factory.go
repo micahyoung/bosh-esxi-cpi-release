@@ -11,13 +11,11 @@ import (
 
 	"bosh-vmrun-cpi/config"
 	"bosh-vmrun-cpi/driver"
-	"bosh-vmrun-cpi/govc"
 	"bosh-vmrun-cpi/stemcell"
 	"bosh-vmrun-cpi/vm"
 )
 
 type Factory struct {
-	govcClient      govc.GovcClient
 	driverClient    driver.Client
 	stemcellClient  stemcell.StemcellClient
 	agentSettings   vm.AgentSettings
@@ -45,7 +43,6 @@ var _ apiv1.CPIFactory = Factory{}
 var _ apiv1.CPI = CPI{}
 
 func NewFactory(
-	govcClient govc.GovcClient,
 	driverClient driver.Client,
 	stemcellClient stemcell.StemcellClient,
 	agentSettings vm.AgentSettings,
@@ -56,7 +53,6 @@ func NewFactory(
 	logger boshlog.Logger,
 ) Factory {
 	return Factory{
-		govcClient,
 		driverClient,
 		stemcellClient,
 		agentSettings,
@@ -71,15 +67,15 @@ func NewFactory(
 func (f Factory) New(_ apiv1.CallContext) (apiv1.CPI, error) {
 	return CPI{
 		NewCreateStemcellMethod(f.driverClient, f.stemcellClient, f.uuidGen, f.logger),
-		NewDeleteStemcellMethod(f.govcClient, f.logger),
+		NewDeleteStemcellMethod(f.driverClient, f.logger),
 		NewCreateVMMethod(f.driverClient, f.agentSettings, f.config.GetAgentOptions(), f.agentEnvFactory, f.uuidGen, f.logger),
-		NewDeleteVMMethod(f.govcClient),
-		NewHasVMMethod(f.govcClient),
-		NewCreateDiskMethod(f.govcClient, f.uuidGen),
-		NewAttachDiskMethod(f.govcClient, f.agentSettings, f.agentEnvFactory),
-		NewDetachDiskMethod(f.govcClient, f.agentSettings, f.agentEnvFactory),
-		NewDeleteDiskMethod(f.govcClient, f.logger),
-		NewMiscMethod(f.govcClient),
+		NewDeleteVMMethod(f.driverClient),
+		NewHasVMMethod(f.driverClient),
+		NewCreateDiskMethod(f.driverClient, f.uuidGen),
+		NewAttachDiskMethod(f.driverClient, f.agentSettings, f.agentEnvFactory),
+		NewDetachDiskMethod(f.driverClient, f.agentSettings, f.agentEnvFactory),
+		NewDeleteDiskMethod(f.driverClient, f.logger),
+		NewMiscMethod(),
 	}, nil
 }
 

@@ -11,16 +11,13 @@ if ! [ -f state/env.sh ]; then
 fi
 
 source state/env.sh
-: ${VCENTER_HOST:?"!"}
-: ${VCENTER_USER:?"!"}
-: ${VCENTER_PASSWORD:?"!"}
-: ${VCENTER_DATACENTER:?"!"}
-: ${VCENTER_DATASTORE:?"!"}
+: ${VMRUN_BIN_PATH?"!"}
+: ${OVFTOOL_BIN_PATH?"!"}
+: ${VDISKMANAGER_BIN_PATH?"!"} : ${VCENTER_NETWORK_NAME:?"!"}
 : ${DIRECTOR_IP?"!"}
 : ${NETWORK_CIDR:?"!"}
 : ${NETWORK_GW:?"!"}
 : ${NETWORK_DNS:?"!"}
-: ${VCENTER_NETWORK_NAME:?"!"}
 
 if [ -n ${RESET:-""} ]; then
   FORGET_STEMCELLS="y"
@@ -91,12 +88,10 @@ if ! [ -d $vm_store_path ]; then
   mkdir -p $vm_store_path
 fi
 
-ovftool_bin_path=$(which ovftool)
-vmrun_bin_path=$(which vmrun)
-
 stemcell_sha1=$(shasum -a1 < state/stemcell.tgz | awk '{print $1}')
 
-#export BOSH_LOG_LEVEL=debug
+export BOSH_LOG_LEVEL=debug
+  #--state ./state/bosh_state.json \
 HOME=$PWD/state/bosh_home \
 $bosh_bin create-env state/bosh-deployment/bosh.yml \
   -o state/bosh-deployment/jumpbox-user.yml \
@@ -113,11 +108,11 @@ $bosh_bin create-env state/bosh-deployment/bosh.yml \
   -v internal_gw="$NETWORK_GW" \
   -v dns_recursor_ip="$NETWORK_DNS"  \
   -v network_name="$VCENTER_NETWORK_NAME" \
-  -v vcenter_dc=$VCENTER_DATACENTER \
-  -v vcenter_ds=$VCENTER_DATASTORE \
-  -v vcenter_ip=$VCENTER_HOST \
-  -v vcenter_user=$VCENTER_USER \
-  -v vcenter_password=$VCENTER_PASSWORD \
+  -v vcenter_dc="deleteme" \
+  -v vcenter_ds="deleteme" \
+  -v vcenter_ip="deleteme" \
+  -v vcenter_user="deleteme" \
+  -v vcenter_password="deleteme" \
   -v vcenter_templates=bosh-1-templates \
   -v vcenter_vms=bosh-1-vms \
   -v vcenter_disks=bosh-1-disks \
@@ -125,11 +120,13 @@ $bosh_bin create-env state/bosh-deployment/bosh.yml \
   -v stemcell_url=file://$PWD/state/stemcell.tgz \
   -v stemcell_sha1=$stemcell_sha1 \
   -v vm_store_path="$vm_store_path" \
-  -v ovftool_bin_path="$ovftool_bin_path" \
-  -v vmrun_bin_path="$vmrun_bin_path" \
+  -v vmrun_bin_path="$VMRUN_BIN_PATH" \
+  -v ovftool_bin_path="$OVFTOOL_BIN_PATH" \
+  -v vdiskmanager_bin_path="$VDISKMANAGER_BIN_PATH" \
   ${RECREATE_VM:+"--recreate"} \
   ;
 
+exit
 cat > state/cloud-config-opsfile.yml <<EOF
 - type: replace
   path: /networks/name=default/subnets/0/reserved

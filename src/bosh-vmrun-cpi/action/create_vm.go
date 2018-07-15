@@ -102,7 +102,7 @@ func (c CreateVMMethod) CreateVM(
 		return newVMCID, err
 	}
 
-	_, err = c.driverClient.StartVM(vmId)
+	err = c.driverClient.StartVM(vmId)
 	if err != nil {
 		return newVMCID, err
 	}

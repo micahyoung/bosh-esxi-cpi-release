@@ -15,7 +15,7 @@ import (
 	"bosh-vmrun-cpi/driver"
 )
 
-var _ = Describe("Driver", func() {
+var _ = Describe("driver integration", func() {
 	var client driver.Client
 	var esxNetworkName = os.Getenv("VCENTER_NETWORK_NAME")
 	var vmId = "vm-virtualmachine"
@@ -110,6 +110,9 @@ var _ = Describe("Driver", func() {
 			time.Sleep(1 * time.Second)
 
 			err = client.DetachDisk(vmId, "disk-1")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = client.StopVM(vmId)
 			Expect(err).ToNot(HaveOccurred())
 
 			err = client.DestroyVM(vmId)

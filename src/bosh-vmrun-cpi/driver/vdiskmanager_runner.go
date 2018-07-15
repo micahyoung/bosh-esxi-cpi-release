@@ -13,6 +13,8 @@ type VdiskmanagerRunnerImpl struct {
 }
 
 func NewVdiskmanagerRunner(vmdiskmanagerBinPath string, logger boshlog.Logger) VdiskmanagerRunner {
+	logger.DebugWithDetails("vdiskmanager-runner", "bin: %+s", vmdiskmanagerBinPath)
+
 	return VdiskmanagerRunnerImpl{vmdiskmanagerBinPath: vmdiskmanagerBinPath, logger: logger}
 }
 

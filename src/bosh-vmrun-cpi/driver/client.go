@@ -153,11 +153,14 @@ func (c ClientImpl) StartVM(vmName string) error {
 		return err
 	}
 
+	//TODO: switchto vmrun waitForIP
 	err = c.waitForVMStart(vmName)
 	if err != nil {
 		c.logger.ErrorWithDetails("driver", "waiting for VM to start", err)
 		return err
 	}
+
+	time.Sleep(10 * time.Second)
 
 	return nil
 }
@@ -190,11 +193,15 @@ func (c ClientImpl) startVM(vmName string) error {
 }
 
 func (c ClientImpl) HasVM(vmName string) bool {
+	return c.vmExists(vmName)
+}
+
+func (c ClientImpl) vmExists(vmName string) bool {
 	if _, err := os.Stat(c.vmxPath(vmName)); err != nil {
 		return false
+	} else {
+		return true
 	}
-
-	return true
 }
 
 func (c ClientImpl) CreateEphemeralDisk(vmName string, diskMB int) error {
@@ -260,6 +267,26 @@ func (c ClientImpl) DestroyDisk(diskId string) error {
 	return nil
 }
 
+func (c ClientImpl) StopVM(vmName string) error {
+	var err error
+	var vmState string
+
+	vmState, err = c.vmState(vmName)
+	if err != nil {
+		return err
+	}
+
+	if vmState == STATE_POWER_ON {
+		err = c.stopVM(vmName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+//TODO: add more graceful handling of locked vmx (when stopped but GUI has them open)
 func (c ClientImpl) DestroyVM(vmName string) error {
 	var err error
 	var vmState string
@@ -270,22 +297,26 @@ func (c ClientImpl) DestroyVM(vmName string) error {
 	}
 
 	if vmState == STATE_POWER_ON {
-		err = c.stopVm(vmName)
+		err = c.stopVM(vmName)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = c.destroyVm(vmName)
+	vmState, err = c.vmState(vmName)
 	if err != nil {
 		return err
 	}
 
-	err = os.Remove(c.ephemeralDiskPath(vmName))
-	if err != nil {
-		c.logger.ErrorWithDetails("driver", "DestroyDisk", err)
-		return err
+	if vmState == STATE_POWER_OFF {
+		err = c.destroyVm(vmName)
+		if err != nil {
+			return err
+		}
 	}
+
+	//attempt to cleanup ephemeral disk, ignore error
+	_ = os.Remove(c.ephemeralDiskPath(vmName))
 
 	return nil
 }
@@ -315,7 +346,7 @@ func (c ClientImpl) initHardware(vmName string) error {
 	return c.vmxBuilder.InitHardware(c.vmxPath(vmName))
 }
 
-func (c ClientImpl) stopVm(vmName string) error {
+func (c ClientImpl) stopVM(vmName string) error {
 	args := []string{"stop", c.vmxPath(vmName)}
 
 	_, err := c.vmrunRunner.CliCommand(args, nil)
@@ -345,7 +376,11 @@ func (c ClientImpl) vmState(vmName string) (string, error) {
 		return result, err
 	}
 
-	if strings.Contains(result, c.vmxPath(vmName)) {
+	if !c.vmExists(vmName) {
+		return STATE_NOT_FOUND, nil
+	}
+
+	if strings.Contains(result, vmName) {
 		return STATE_POWER_ON, nil
 	}
 
