@@ -21,19 +21,17 @@ type FakeClient struct {
 		result1 bool
 		result2 error
 	}
-	CloneVMStub        func(string, string) (string, error)
+	CloneVMStub        func(string, string) error
 	cloneVMMutex       sync.RWMutex
 	cloneVMArgsForCall []struct {
 		arg1 string
 		arg2 string
 	}
 	cloneVMReturns struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	cloneVMReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
+		result1 error
 	}
 	UpdateVMIsoStub        func(string, string) error
 	updateVMIsoMutex       sync.RWMutex
@@ -56,6 +54,17 @@ type FakeClient struct {
 		result1 error
 	}
 	startVMReturnsOnCall map[int]struct {
+		result1 error
+	}
+	StopVMStub        func(string) error
+	stopVMMutex       sync.RWMutex
+	stopVMArgsForCall []struct {
+		arg1 string
+	}
+	stopVMReturns struct {
+		result1 error
+	}
+	stopVMReturnsOnCall map[int]struct {
 		result1 error
 	}
 	HasVMStub        func(string) bool
@@ -234,7 +243,7 @@ func (fake *FakeClient) ImportOvfReturnsOnCall(i int, result1 bool, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeClient) CloneVM(arg1 string, arg2 string) (string, error) {
+func (fake *FakeClient) CloneVM(arg1 string, arg2 string) error {
 	fake.cloneVMMutex.Lock()
 	ret, specificReturn := fake.cloneVMReturnsOnCall[len(fake.cloneVMArgsForCall)]
 	fake.cloneVMArgsForCall = append(fake.cloneVMArgsForCall, struct {
@@ -247,9 +256,9 @@ func (fake *FakeClient) CloneVM(arg1 string, arg2 string) (string, error) {
 		return fake.CloneVMStub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fake.cloneVMReturns.result1, fake.cloneVMReturns.result2
+	return fake.cloneVMReturns.result1
 }
 
 func (fake *FakeClient) CloneVMCallCount() int {
@@ -264,26 +273,23 @@ func (fake *FakeClient) CloneVMArgsForCall(i int) (string, string) {
 	return fake.cloneVMArgsForCall[i].arg1, fake.cloneVMArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) CloneVMReturns(result1 string, result2 error) {
+func (fake *FakeClient) CloneVMReturns(result1 error) {
 	fake.CloneVMStub = nil
 	fake.cloneVMReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) CloneVMReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) CloneVMReturnsOnCall(i int, result1 error) {
 	fake.CloneVMStub = nil
 	if fake.cloneVMReturnsOnCall == nil {
 		fake.cloneVMReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
+			result1 error
 		})
 	}
 	fake.cloneVMReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeClient) UpdateVMIso(arg1 string, arg2 string) error {
@@ -379,6 +385,54 @@ func (fake *FakeClient) StartVMReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.startVMReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) StopVM(arg1 string) error {
+	fake.stopVMMutex.Lock()
+	ret, specificReturn := fake.stopVMReturnsOnCall[len(fake.stopVMArgsForCall)]
+	fake.stopVMArgsForCall = append(fake.stopVMArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("StopVM", []interface{}{arg1})
+	fake.stopVMMutex.Unlock()
+	if fake.StopVMStub != nil {
+		return fake.StopVMStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.stopVMReturns.result1
+}
+
+func (fake *FakeClient) StopVMCallCount() int {
+	fake.stopVMMutex.RLock()
+	defer fake.stopVMMutex.RUnlock()
+	return len(fake.stopVMArgsForCall)
+}
+
+func (fake *FakeClient) StopVMArgsForCall(i int) string {
+	fake.stopVMMutex.RLock()
+	defer fake.stopVMMutex.RUnlock()
+	return fake.stopVMArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) StopVMReturns(result1 error) {
+	fake.StopVMStub = nil
+	fake.stopVMReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) StopVMReturnsOnCall(i int, result1 error) {
+	fake.StopVMStub = nil
+	if fake.stopVMReturnsOnCall == nil {
+		fake.stopVMReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.stopVMReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -885,6 +939,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.updateVMIsoMutex.RUnlock()
 	fake.startVMMutex.RLock()
 	defer fake.startVMMutex.RUnlock()
+	fake.stopVMMutex.RLock()
+	defer fake.stopVMMutex.RUnlock()
 	fake.hasVMMutex.RLock()
 	defer fake.hasVMMutex.RUnlock()
 	fake.setVMNetworkAdapterMutex.RLock()

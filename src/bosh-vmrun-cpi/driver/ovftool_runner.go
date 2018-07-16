@@ -25,11 +25,14 @@ func (c OvftoolRunnerImpl) CliCommand(args []string, flagMap map[string]string) 
 	}
 	commandArgs = append(commandArgs, args...)
 
-	c.logger.DebugWithDetails("ovftool-runner", "args: %+v", commandArgs)
+	c.logger.DebugWithDetails("ovftool-runner", "args: ", commandArgs)
 
 	command := exec.Command(c.ovftoolBinPath, commandArgs...)
 
 	resultBytes, err := command.CombinedOutput()
+	result := string(resultBytes)
+
+	c.logger.DebugWithDetails("ovftool-runner", "result: ", result)
 
 	return string(resultBytes), err
 }

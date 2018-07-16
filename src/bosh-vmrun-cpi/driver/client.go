@@ -11,6 +11,7 @@ import (
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 )
 
+//TODO: use boshfs for fs operations
 type ClientImpl struct {
 	config             Config
 	vmrunRunner        VmrunRunner
@@ -21,10 +22,9 @@ type ClientImpl struct {
 }
 
 var (
-	STATE_NOT_FOUND         = "state-not-found"
-	STATE_POWER_ON          = "state-on"
-	STATE_POWER_OFF         = "state-off"
-	STATE_BLOCKING_QUESTION = "state-blocking-question"
+	STATE_NOT_FOUND = "state-not-found"
+	STATE_POWER_ON  = "state-on"
+	STATE_POWER_OFF = "state-off"
 )
 
 func NewClient(vmrunRunner VmrunRunner, ovftoolRunner OvftoolRunner, vdiskmanagerRunner VdiskmanagerRunner, vmxBuilder VmxBuilder, config Config, logger boshlog.Logger) Client {
@@ -63,6 +63,7 @@ func (c ClientImpl) envIsoPath(vmName string) string {
 }
 
 func (c ClientImpl) ImportOvf(ovfPath string, vmName string) (bool, error) {
+	var err error
 	flags := map[string]string{
 		"sourceType": "OVF",
 		"targetType": "VMX",
@@ -70,32 +71,31 @@ func (c ClientImpl) ImportOvf(ovfPath string, vmName string) (bool, error) {
 	}
 	args := []string{ovfPath, c.config.VmPath()}
 
-	result, err := c.ovftoolRunner.CliCommand(args, flags)
+	_, err = c.ovftoolRunner.CliCommand(args, flags)
 	if err != nil {
-		c.logger.ErrorWithDetails("client", "import ovf", err, result)
+		c.logger.ErrorWithDetails("client", "import ovf: runner", err)
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (c ClientImpl) CloneVM(sourceVmName string, cloneVmName string) (string, error) {
-	var result string
+func (c ClientImpl) CloneVM(sourceVmName string, cloneVmName string) error {
 	var err error
 
-	result, err = c.cloneVm(sourceVmName, cloneVmName)
+	_, err = c.cloneVm(sourceVmName, cloneVmName)
 	if err != nil {
-		c.logger.ErrorWithDetails("client", "clone stemcell", err, result)
-		return result, err
+		c.logger.ErrorWithDetails("client", "clone vm: clone stemcell", err)
+		return err
 	}
 
 	err = c.initHardware(cloneVmName)
 	if err != nil {
-		c.logger.ErrorWithDetails("client", "configuring vm hardware", err)
-		return result, err
+		c.logger.ErrorWithDetails("client", "clone vm: configuring vm hardware", err)
+		return err
 	}
 
-	return result, nil
+	return nil
 }
 
 func (c ClientImpl) SetVMNetworkAdapter(vmName string, networkName string, macAddress string) error {
@@ -137,7 +137,7 @@ func (c ClientImpl) UpdateVMIso(vmName string, localIsoPath string) error {
 
 	err = c.vmxBuilder.AttachCdrom(c.envIsoPath(vmName), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "connecting ENV cdrom", err)
+		c.logger.ErrorWithDetails("driver", "connecting ENV cdrom", err)
 		return err
 	}
 
@@ -160,8 +160,6 @@ func (c ClientImpl) StartVM(vmName string) error {
 		return err
 	}
 
-	time.Sleep(10 * time.Second)
-
 	return nil
 }
 
@@ -181,12 +179,14 @@ func (c ClientImpl) waitForVMStart(vmName string) error {
 		time.Sleep(1 * time.Second)
 	}
 
+	time.Sleep(1 * time.Second)
+
 	return nil
 }
 
 func (c ClientImpl) startVM(vmName string) error {
 	args := []string{"start", c.vmxPath(vmName), "nogui"}
-	//args := []string{"start", c.vmxPath(vmName)}
+	//args := []string{"start", c.vmxPath(vmName), "gui"}
 
 	_, err := c.vmrunRunner.CliCommand(args, nil)
 	return err
@@ -230,6 +230,7 @@ func (c ClientImpl) CreateDisk(diskId string, diskMB int) error {
 		c.logger.ErrorWithDetails("driver", "CreateDisk", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -238,7 +239,7 @@ func (c ClientImpl) AttachDisk(vmName string, diskId string) error {
 
 	err = c.vmxBuilder.AttachDisk(c.persistentDiskPath(diskId), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "AttachDisk", err)
+		c.logger.ErrorWithDetails("driver", "AttachDisk", err)
 		return err
 	}
 	return nil
@@ -249,7 +250,7 @@ func (c ClientImpl) DetachDisk(vmName string, diskId string) error {
 
 	err = c.vmxBuilder.DetachDisk(c.persistentDiskPath(vmName), c.vmxPath(vmName))
 	if err != nil {
-		c.logger.ErrorWithDetails("govc", "DetachDisk", err)
+		c.logger.ErrorWithDetails("driver", "DetachDisk", err)
 		return err
 	}
 	return nil
@@ -276,11 +277,34 @@ func (c ClientImpl) StopVM(vmName string) error {
 		return err
 	}
 
-	if vmState == STATE_POWER_ON {
-		err = c.stopVM(vmName)
+	if vmState != STATE_POWER_ON {
+		return nil
+	}
+
+	go func() {
+		err = c.softStopVM(vmName)
+		if err != nil {
+			c.logger.Error("driver", "soft stop")
+		}
+	}()
+
+	for i := 0; i < 10; i++ {
+		vmInfo, err := c.vmxBuilder.VMInfo(c.vmxPath(vmName))
 		if err != nil {
 			return err
 		}
+
+		if vmInfo.CleanShutdown {
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	err = c.hardStopVM(vmName)
+	if err != nil {
+		c.logger.Error("driver", "hard stop")
+		return err
 	}
 
 	return nil
@@ -297,7 +321,7 @@ func (c ClientImpl) DestroyVM(vmName string) error {
 	}
 
 	if vmState == STATE_POWER_ON {
-		err = c.stopVM(vmName)
+		err = c.hardStopVM(vmName)
 		if err != nil {
 			return err
 		}
@@ -346,8 +370,15 @@ func (c ClientImpl) initHardware(vmName string) error {
 	return c.vmxBuilder.InitHardware(c.vmxPath(vmName))
 }
 
-func (c ClientImpl) stopVM(vmName string) error {
-	args := []string{"stop", c.vmxPath(vmName)}
+func (c ClientImpl) softStopVM(vmName string) error {
+	args := []string{"stop", c.vmxPath(vmName), "soft"}
+
+	_, err := c.vmrunRunner.CliCommand(args, nil)
+	return err
+}
+
+func (c ClientImpl) hardStopVM(vmName string) error {
+	args := []string{"stop", c.vmxPath(vmName), "hard"}
 
 	_, err := c.vmrunRunner.CliCommand(args, nil)
 	return err
@@ -368,6 +399,8 @@ func (c ClientImpl) setVMResources(vmName string, cpuCount int, ramMB int) error
 	return c.vmxBuilder.SetVMResources(cpuCount, ramMB, c.vmxPath(vmName))
 }
 
+//TODO: should match on full VMX path instead of just name
+//      failing due to vmxPath substring not matching with string.Contains (maybe unicode problem?)
 func (c ClientImpl) vmState(vmName string) (string, error) {
 	args := []string{"list"}
 

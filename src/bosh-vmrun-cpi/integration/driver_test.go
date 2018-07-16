@@ -57,7 +57,7 @@ var _ = Describe("driver integration", func() {
 			found = client.HasVM(vmId)
 			Expect(found).To(Equal(false))
 
-			_, err = client.CloneVM(stemcellId, vmId)
+			err = client.CloneVM(stemcellId, vmId)
 			Expect(err).ToNot(HaveOccurred())
 
 			found = client.HasVM(vmId)

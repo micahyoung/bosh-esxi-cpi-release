@@ -1,9 +1,9 @@
 package driver
 
 import (
+	"fmt"
 	"io/ioutil"
 	"sort"
-	"time"
 
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	"github.com/hooklift/govmx"
@@ -61,6 +61,7 @@ func (p VmxBuilderImpl) AttachDisk(diskPath, vmxPath string) error {
 		newSCSIDevice := vmx.SCSIDevice{Device: vmx.Device{
 			Filename: diskPath,
 			Present:  true,
+			VMXID:    fmt.Sprintf("scsi0:%d", len(vmxVM.SCSIDevices)-1),
 		}}
 		vmxVM.SCSIDevices = append(vmxVM.SCSIDevices, newSCSIDevice)
 
@@ -114,9 +115,10 @@ func (p VmxBuilderImpl) VMInfo(vmxPath string) (VMInfo, error) {
 	//p.logger.DebugWithDetails("vmx-builder", "DEBUG: %+v", vmxVM)
 
 	vmInfo := VMInfo{
-		Name: vmxVM.DisplayName,
-		CPUs: int(vmxVM.NumvCPUs),
-		RAM:  int(vmxVM.Memsize),
+		Name:          vmxVM.DisplayName,
+		CPUs:          int(vmxVM.NumvCPUs),
+		RAM:           int(vmxVM.Memsize),
+		CleanShutdown: vmxVM.CleanShutdown,
 	}
 
 	for _, vmxNic := range vmxVM.Ethernet {
@@ -139,11 +141,6 @@ func (p VmxBuilderImpl) VMInfo(vmxPath string) (VMInfo, error) {
 		})
 	}
 
-	//consistently sort disks by ID/VMXID
-	sort.Slice(vmInfo.Disks, func(i, j int) bool {
-		return vmInfo.Disks[i].ID < vmInfo.Disks[j].ID
-	})
-
 	return vmInfo, nil
 }
 
@@ -157,9 +154,7 @@ func (p VmxBuilderImpl) replaceVmx(vmxPath string, vmUpdateFunc func(*vmx.Virtua
 		return err
 	}
 
-	time.Sleep(5 * time.Second)
 	vmxVM = vmUpdateFunc(vmxVM)
-	time.Sleep(5 * time.Second)
 
 	err = p.writeVmx(vmxVM, vmxPath)
 	if err != nil {
@@ -184,6 +179,11 @@ func (p VmxBuilderImpl) getVmx(vmxPath string) (*vmx.VirtualMachine, error) {
 		p.logger.ErrorWithDetails("vmx-builder", "unmarshaling file: %s", vmxPath)
 		return nil, err
 	}
+
+	//consistently sort disks by VMXID
+	sort.SliceStable(vmxVM.SCSIDevices, func(i, j int) bool {
+		return vmxVM.SCSIDevices[i].VMXID < vmxVM.SCSIDevices[j].VMXID
+	})
 
 	return vmxVM, nil
 }

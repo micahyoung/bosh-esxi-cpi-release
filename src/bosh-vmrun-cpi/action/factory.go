@@ -69,7 +69,7 @@ func (f Factory) New(_ apiv1.CallContext) (apiv1.CPI, error) {
 		NewCreateStemcellMethod(f.driverClient, f.stemcellClient, f.uuidGen, f.logger),
 		NewDeleteStemcellMethod(f.driverClient, f.logger),
 		NewCreateVMMethod(f.driverClient, f.agentSettings, f.config.GetAgentOptions(), f.agentEnvFactory, f.uuidGen, f.logger),
-		NewDeleteVMMethod(f.driverClient),
+		NewDeleteVMMethod(f.driverClient, f.logger),
 		NewHasVMMethod(f.driverClient),
 		NewCreateDiskMethod(f.driverClient, f.uuidGen),
 		NewAttachDiskMethod(f.driverClient, f.agentSettings, f.agentEnvFactory),

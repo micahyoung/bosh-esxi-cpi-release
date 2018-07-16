@@ -1,6 +1,8 @@
 package action
 
 import (
+	"fmt"
+
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	boshuuid "github.com/cloudfoundry/bosh-utils/uuid"
 	"github.com/cppforlife/bosh-cpi-go/apiv1"
@@ -34,7 +36,7 @@ func (c CreateVMMethod) CreateVM(
 	cloudProps apiv1.VMCloudProps, networks apiv1.Networks,
 	associatedDiskCIDs []apiv1.DiskCID, vmEnv apiv1.VMEnv) (apiv1.VMCID, error) {
 
-	c.logger.DebugWithDetails("create-vm", "networks", networks)
+	c.logger.DebugWithDetails("create-vm", "networks", fmt.Sprintf("%+v", networks))
 
 	vmUuid, _ := c.uuidGen.Generate()
 	newVMCID := apiv1.NewVMCID(vmUuid)
@@ -48,7 +50,7 @@ func (c CreateVMMethod) CreateVM(
 		return newVMCID, err
 	}
 
-	_, err = c.driverClient.CloneVM(stemcellId, vmId)
+	err = c.driverClient.CloneVM(stemcellId, vmId)
 	if err != nil {
 		return newVMCID, err
 	}

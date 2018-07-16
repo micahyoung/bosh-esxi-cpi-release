@@ -5,7 +5,7 @@ import "github.com/hooklift/govmx"
 //go:generate counterfeiter -o fakes/fake_client.go $GOPATH/src/bosh-vmrun-cpi/driver/driver.go Client
 type Client interface {
 	ImportOvf(string, string) (bool, error)
-	CloneVM(string, string) (string, error)
+	CloneVM(string, string) error
 	UpdateVMIso(string, string) error
 	StartVM(string) error
 	StopVM(string) error
@@ -68,4 +68,5 @@ type VMInfo struct {
 		ID   string
 		Path string
 	}
+	CleanShutdown bool
 }

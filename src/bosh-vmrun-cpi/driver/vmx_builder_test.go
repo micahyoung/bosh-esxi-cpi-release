@@ -3,7 +3,6 @@ package driver_test
 import (
 	"io/ioutil"
 	"os"
-	"sort"
 
 	"github.com/hooklift/govmx"
 	. "github.com/onsi/ginkgo"
@@ -101,7 +100,6 @@ var _ = Describe("VmxBuilder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			disks := vmxVM.SCSIDevices
-			sort.Slice(disks, func(i, j int) bool { return disks[i].VMXID < disks[j].VMXID })
 
 			Expect(disks[1].Filename).To(Equal("vm-virtualmachine-disk1.vmdk"))
 			Expect(disks[1].Present).To(BeTrue())

@@ -26,11 +26,14 @@ func (c VmrunRunnerImpl) CliCommand(args []string, flagMap map[string]string) (s
 		commandArgs = append(commandArgs, fmt.Sprintf("-%s=%s", option, value))
 	}
 
-	c.logger.Debug("vmrun-runner", fmt.Sprintf("%+v", commandArgs))
+	c.logger.DebugWithDetails("vmrun-runner", "args: ", commandArgs)
 
 	command := exec.Command(c.vmrunBinPath, commandArgs...)
 
 	resultBytes, err := command.CombinedOutput()
+	result := string(resultBytes)
 
-	return string(resultBytes), err
+	c.logger.DebugWithDetails("vmrun-runner", "results: ", result)
+
+	return result, err
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("main", func() {
+var _ = Describe("main integration", func() {
 	var stemcellCid string
 	var vmCid string
 	var diskId string
@@ -87,7 +87,7 @@ var _ = Describe("main", func() {
 		stdin.Write([]byte(request))
 		stdin.Close()
 
-		Eventually(session.Out, "60s").Should(gbytes.Say(`"error":null`))
+		Eventually(session.Out, "120s").Should(gbytes.Say(`"error":null`))
 		Expect(json.Unmarshal(session.Out.Contents(), &response)).To(Succeed())
 		vmCid = response["result"].(string)
 		Expect(vmCid).ToNot(Equal(""))

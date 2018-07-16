@@ -38,12 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.DebugWithDetails("main", "CPI CONFIG:", cpiConfig)
-
 	driverConfig := driver.NewConfig(cpiConfig)
-
-	logger.DebugWithDetails("main", "DRIVER CONFIG:", driverConfig)
-
 	vmrunRunner := driver.NewVmrunRunner(driverConfig.VmrunPath(), logger)
 	ovftoolRunner := driver.NewOvftoolRunner(driverConfig.OvftoolPath(), logger)
 	vdiskmanagerRunner := driver.NewVdiskmanagerRunner(driverConfig.VdiskmanagerPath(), logger)

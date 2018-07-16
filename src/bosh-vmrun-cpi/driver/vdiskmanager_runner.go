@@ -25,8 +25,11 @@ func (p VdiskmanagerRunnerImpl) CreateDisk(diskPath string, diskMB int) error {
 		"s": fmt.Sprintf("%dMB", diskMB),
 		"t": "0", //single growable virtual disk
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (c VdiskmanagerRunnerImpl) run(args []string, flagMap map[string]string) (string, error) {
@@ -36,11 +39,14 @@ func (c VdiskmanagerRunnerImpl) run(args []string, flagMap map[string]string) (s
 	}
 	commandArgs = append(commandArgs, args...)
 
-	c.logger.Debug("vdiskmanager-runner", fmt.Sprintf("%+v", commandArgs))
+	c.logger.DebugWithDetails("vdiskmanager-runner", "args:", commandArgs)
 
 	command := exec.Command(c.vmdiskmanagerBinPath, commandArgs...)
 
 	resultBytes, err := command.CombinedOutput()
+	result := string(resultBytes)
 
-	return string(resultBytes), err
+	c.logger.DebugWithDetails("vdiskmanager-runner", "result:", result)
+
+	return result, err
 }
