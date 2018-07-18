@@ -13,7 +13,8 @@ fi
 source state/env.sh
 : ${VMRUN_BIN_PATH?"!"}
 : ${OVFTOOL_BIN_PATH?"!"}
-: ${VDISKMANAGER_BIN_PATH?"!"} : ${VCENTER_NETWORK_NAME:?"!"}
+: ${VDISKMANAGER_BIN_PATH?"!"}
+: ${VCENTER_NETWORK_NAME:?"!"}
 : ${DIRECTOR_IP?"!"}
 : ${NETWORK_CIDR:?"!"}
 : ${NETWORK_GW:?"!"}

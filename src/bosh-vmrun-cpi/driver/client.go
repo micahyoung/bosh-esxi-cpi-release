@@ -65,9 +65,11 @@ func (c ClientImpl) envIsoPath(vmName string) string {
 func (c ClientImpl) ImportOvf(ovfPath string, vmName string) (bool, error) {
 	var err error
 	flags := map[string]string{
-		"sourceType": "OVF",
-		"targetType": "VMX",
-		"name":       vmName,
+		"sourceType":          "OVF",
+		"allowAllExtraConfig": "true",
+		"allowExtraConfig":    "true",
+		"targetType":          "VMX",
+		"name":                vmName,
 	}
 	args := []string{ovfPath, c.config.VmPath()}
 
@@ -358,6 +360,7 @@ func (c ClientImpl) cloneVm(sourceVmName string, targetVmName string) (string, e
 		"name":                targetVmName,
 		"sourceType":          "VMX",
 		"allowAllExtraConfig": "true",
+		"allowExtraConfig":    "true",
 		"exportFlags":         "extraconfig,mac,uuid",
 		"targetType":          "VMX",
 	}
