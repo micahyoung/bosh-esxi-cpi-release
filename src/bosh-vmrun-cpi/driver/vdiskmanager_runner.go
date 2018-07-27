@@ -2,20 +2,21 @@ package driver
 
 import (
 	"fmt"
-	"os/exec"
 
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	boshsys "github.com/cloudfoundry/bosh-utils/system"
 )
 
 type VdiskmanagerRunnerImpl struct {
 	vmdiskmanagerBinPath string
 	logger               boshlog.Logger
+	boshRunner           boshsys.CmdRunner
 }
 
-func NewVdiskmanagerRunner(vmdiskmanagerBinPath string, logger boshlog.Logger) VdiskmanagerRunner {
+func NewVdiskmanagerRunner(vmdiskmanagerBinPath string, boshRunner boshsys.CmdRunner, logger boshlog.Logger) VdiskmanagerRunner {
 	logger.DebugWithDetails("vdiskmanager-runner", "bin: %+s", vmdiskmanagerBinPath)
 
-	return VdiskmanagerRunnerImpl{vmdiskmanagerBinPath: vmdiskmanagerBinPath, logger: logger}
+	return VdiskmanagerRunnerImpl{vmdiskmanagerBinPath: vmdiskmanagerBinPath, boshRunner: boshRunner, logger: logger}
 }
 
 func (p VdiskmanagerRunnerImpl) CreateDisk(diskPath string, diskMB int) error {
@@ -39,14 +40,7 @@ func (c VdiskmanagerRunnerImpl) run(args []string, flagMap map[string]string) (s
 	}
 	commandArgs = append(commandArgs, args...)
 
-	c.logger.DebugWithDetails("vdiskmanager-runner", "args:", commandArgs)
+	stdout, _, _, err := c.boshRunner.RunCommand(c.vmdiskmanagerBinPath, commandArgs...)
 
-	command := exec.Command(c.vmdiskmanagerBinPath, commandArgs...)
-
-	resultBytes, err := command.CombinedOutput()
-	result := string(resultBytes)
-
-	c.logger.DebugWithDetails("vdiskmanager-runner", "result:", result)
-
-	return result, err
+	return stdout, err
 }

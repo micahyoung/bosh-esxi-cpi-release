@@ -2,20 +2,21 @@ package driver
 
 import (
 	"fmt"
-	"os/exec"
 
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	boshsys "github.com/cloudfoundry/bosh-utils/system"
 )
 
 type OvftoolRunnerImpl struct {
 	ovftoolBinPath string
 	logger         boshlog.Logger
+	boshRunner     boshsys.CmdRunner
 }
 
-func NewOvftoolRunner(ovftoolBinPath string, logger boshlog.Logger) OvftoolRunner {
+func NewOvftoolRunner(ovftoolBinPath string, boshRunner boshsys.CmdRunner, logger boshlog.Logger) OvftoolRunner {
 	logger.DebugWithDetails("ovftool-runner", "bin: %+s", ovftoolBinPath)
 
-	return &OvftoolRunnerImpl{ovftoolBinPath: ovftoolBinPath, logger: logger}
+	return &OvftoolRunnerImpl{ovftoolBinPath: ovftoolBinPath, boshRunner: boshRunner, logger: logger}
 }
 
 func (c OvftoolRunnerImpl) CliCommand(args []string, flagMap map[string]string) (string, error) {
@@ -25,14 +26,7 @@ func (c OvftoolRunnerImpl) CliCommand(args []string, flagMap map[string]string) 
 	}
 	commandArgs = append(commandArgs, args...)
 
-	c.logger.DebugWithDetails("ovftool-runner", "args: ", commandArgs)
+	stdout, _, _, err := c.boshRunner.RunCommand(c.ovftoolBinPath, commandArgs...)
 
-	command := exec.Command(c.ovftoolBinPath, commandArgs...)
-
-	resultBytes, err := command.CombinedOutput()
-	result := string(resultBytes)
-
-	c.logger.DebugWithDetails("ovftool-runner", "result: ", result)
-
-	return string(resultBytes), err
+	return stdout, err
 }

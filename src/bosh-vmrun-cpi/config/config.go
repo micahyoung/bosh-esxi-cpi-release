@@ -18,9 +18,8 @@ type Cloud struct {
 }
 
 type CPIProperties struct {
-	Vcenters []Vcenter
-	Agent    apiv1.AgentOptions
-	Vmrun    Vmrun
+	Agent apiv1.AgentOptions
+	Vmrun Vmrun
 }
 
 type Vmrun struct {
@@ -28,21 +27,6 @@ type Vmrun struct {
 	Vmrun_Bin_Path        string
 	Vdiskmanager_Bin_Path string
 	Ovftool_Bin_Path      string
-}
-
-type Vcenter struct {
-	Host        string
-	User        string
-	Password    string
-	Datacenters []Datacenter
-}
-
-type Datacenter struct {
-	Name              string
-	Vm_Folder         string
-	Template_Folder   string
-	Disk_Path         string
-	Datastore_Pattern string
 }
 
 func NewConfigFromPath(path string, fs boshsys.FileSystem) (Config, error) {

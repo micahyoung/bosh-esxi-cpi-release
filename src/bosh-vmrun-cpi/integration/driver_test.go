@@ -17,20 +17,21 @@ import (
 
 var _ = Describe("driver integration", func() {
 	var client driver.Client
-	var esxNetworkName = os.Getenv("VCENTER_NETWORK_NAME")
+	var esxNetworkName = os.Getenv("NETWORK_NAME")
 	var vmId = "vm-virtualmachine"
 	var stemcellId = "cs-stemcell"
 
 	BeforeEach(func() {
 		logger := boshlog.NewLogger(boshlog.LevelDebug)
+		boshRunner := boshsys.NewExecCmdRunner(logger)
 		fs := boshsys.NewOsFileSystem(logger)
 		cpiConfig, err := cpiconfig.NewConfigFromPath(CpiConfigPath, fs)
 		Expect(err).ToNot(HaveOccurred())
 
 		config := driver.NewConfig(cpiConfig)
-		vmrunRunner := driver.NewVmrunRunner(config.VmrunPath(), logger)
-		ovftoolRunner := driver.NewOvftoolRunner(config.OvftoolPath(), logger)
-		vdiskmanagerRunner := driver.NewVdiskmanagerRunner(config.VdiskmanagerPath(), logger)
+		vmrunRunner := driver.NewVmrunRunner(config.VmrunPath(), boshRunner, logger)
+		ovftoolRunner := driver.NewOvftoolRunner(config.OvftoolPath(), boshRunner, logger)
+		vdiskmanagerRunner := driver.NewVdiskmanagerRunner(config.VdiskmanagerPath(), boshRunner, logger)
 		vmxBuilder := driver.NewVmxBuilder(logger)
 		client = driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, config, logger)
 	})

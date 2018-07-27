@@ -2,10 +2,11 @@
 - type: replace
   path: /instance_groups/name=bosh/properties/vmrun?
   value: &vmrun_properties
+    vm_store_path: "((vm_store_path))"
+    network_name: "((network_name))"
     vmrun_bin_path: "((vmrun_bin_path))"
     ovftool_bin_path: "((ovftool_bin_path))"
     vdiskmanager_bin_path: "((vdiskmanager_bin_path))"
-    vm_store_path: "((vm_store_path))"
 
 - type: replace
   path: /cloud_provider/properties/vmrun?

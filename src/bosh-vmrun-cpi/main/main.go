@@ -39,9 +39,10 @@ func main() {
 	}
 
 	driverConfig := driver.NewConfig(cpiConfig)
-	vmrunRunner := driver.NewVmrunRunner(driverConfig.VmrunPath(), logger)
-	ovftoolRunner := driver.NewOvftoolRunner(driverConfig.OvftoolPath(), logger)
-	vdiskmanagerRunner := driver.NewVdiskmanagerRunner(driverConfig.VdiskmanagerPath(), logger)
+	boshRunner := boshsys.NewExecCmdRunner(logger)
+	vmrunRunner := driver.NewVmrunRunner(driverConfig.VmrunPath(), boshRunner, logger)
+	ovftoolRunner := driver.NewOvftoolRunner(driverConfig.OvftoolPath(), boshRunner, logger)
+	vdiskmanagerRunner := driver.NewVdiskmanagerRunner(driverConfig.VdiskmanagerPath(), boshRunner, logger)
 	vmxBuilder := driver.NewVmxBuilder(logger)
 	driverClient := driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, driverConfig, logger)
 	stemcellClient := stemcell.NewClient(compressor, fs, logger)

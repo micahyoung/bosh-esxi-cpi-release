@@ -57,24 +57,9 @@ var configTemplate, _ = template.New("parse").Parse(`{
 				"vm_store_path": "{{.VmStorePath}}",
 				"vmrun_bin_path": "{{.VmrunBinPath}}",
 				"vdiskmanager_bin_path": "{{.VdiskmanagerBinPath}}",
-				"ovftool_bin_path": "{{.OvftoolBinPath}}"
+				"ovftool_bin_path": "{{.OvftoolBinPath}}",
+				"network_name": "{{.NetworkName}}"
 			},
-			"vcenters": [
-			{
-				"host": "{{.EsxiHost}}",
-				"user": "{{.EsxiUser}}",
-				"password": "{{.EsxiPassword}}",
-				"datacenters": [
-				{
-					"name": "{{.EsxiDatacenter}}",
-					"vm_folder": "BOSH_VMs",
-					"template_folder": "BOSH_Templates",
-					"disk_path": "bosh_disks",
-					"datastore_pattern": "{{.EsxiDatastore}}"
-				}
-				]
-			}
-			],
 			"agent": {
 				"ntp": [
 				],
@@ -96,24 +81,16 @@ func generateCPIConfig() (string, string) {
 
 	var configValues = struct {
 		VmStorePath         string
+		NetworkName         string
 		VmrunBinPath        string
 		VdiskmanagerBinPath string
 		OvftoolBinPath      string
-		EsxiHost            string
-		EsxiUser            string
-		EsxiPassword        string
-		EsxiDatacenter      string
-		EsxiDatastore       string
 	}{
 		VmStorePath:         vmStoreTempDir,
+		NetworkName:         os.Getenv("VMRUN_NETWORK"),
 		VmrunBinPath:        os.Getenv("VMRUN_BIN_PATH"),
 		VdiskmanagerBinPath: os.Getenv("VDISKMANAGER_BIN_PATH"),
 		OvftoolBinPath:      os.Getenv("OVFTOOL_BIN_PATH"),
-		EsxiHost:            os.Getenv("VCENTER_HOST"),
-		EsxiUser:            os.Getenv("VCENTER_USER"),
-		EsxiPassword:        os.Getenv("VCENTER_PASSWORD"),
-		EsxiDatacenter:      os.Getenv("VCENTER_DATACENTER"),
-		EsxiDatastore:       os.Getenv("VCENTER_DATASTORE"),
 	}
 
 	configFile, err := ioutil.TempFile("", "config")

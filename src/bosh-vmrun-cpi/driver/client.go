@@ -25,6 +25,8 @@ var (
 	STATE_NOT_FOUND = "state-not-found"
 	STATE_POWER_ON  = "state-on"
 	STATE_POWER_OFF = "state-off"
+
+	SOFT_SHUTDOWN_TIMEOUT = 30
 )
 
 func NewClient(vmrunRunner VmrunRunner, ovftoolRunner OvftoolRunner, vdiskmanagerRunner VdiskmanagerRunner, vmxBuilder VmxBuilder, config Config, logger boshlog.Logger) Client {
@@ -283,6 +285,7 @@ func (c ClientImpl) StopVM(vmName string) error {
 		return nil
 	}
 
+	//run blocking soft-shutdown command in background
 	go func() {
 		err = c.softStopVM(vmName)
 		if err != nil {
@@ -290,7 +293,7 @@ func (c ClientImpl) StopVM(vmName string) error {
 		}
 	}()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < SOFT_SHUTDOWN_TIMEOUT; i++ {
 		vmInfo, err := c.vmxBuilder.VMInfo(c.vmxPath(vmName))
 		if err != nil {
 			return err

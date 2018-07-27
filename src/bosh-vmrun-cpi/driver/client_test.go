@@ -18,6 +18,7 @@ var _ = Describe("DriverClient", func() {
 	var vmxBuilder *fakedriver.FakeVmxBuilder
 	var config *fakedriver.FakeConfig
 	var logger *fakelogger.FakeLogger
+	var client driver.Client
 
 	BeforeEach(func() {
 		vmrunRunner = &fakedriver.FakeVmrunRunner{}
@@ -26,12 +27,13 @@ var _ = Describe("DriverClient", func() {
 		vmxBuilder = &fakedriver.FakeVmxBuilder{}
 		config = &fakedriver.FakeConfig{}
 		logger = &fakelogger.FakeLogger{}
+
+		client = driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, config, logger)
 	})
 
 	Describe("ImportOvf", func() {
 		It("runs the driver command", func() {
 			config.VmPathReturns("vm-path")
-			client := driver.NewClient(vmrunRunner, ovftoolRunner, vdiskmanagerRunner, vmxBuilder, config, logger)
 			ovfPath := "ovf-path"
 			stemcellId := "stemcell-uuid"
 
@@ -41,12 +43,15 @@ var _ = Describe("DriverClient", func() {
 
 			importArgs, importFlags := ovftoolRunner.CliCommandArgsForCall(0)
 			Expect(importFlags).To(Equal(map[string]string{
-				"sourceType": "OVF",
-				"targetType": "VMX",
+				"sourceType":          "OVF",
+				"allowAllExtraConfig": "true",
+				"allowExtraConfig":    "true",
+				"targetType":          "VMX",
+				"name":                "stemcell-uuid",
 			}))
 			Expect(importArgs).To(Equal([]string{
 				"ovf-path",
-				"esx-url/stemcell-uuid.vmx",
+				"vm-path",
 			}))
 
 			Expect(err).ToNot(HaveOccurred())

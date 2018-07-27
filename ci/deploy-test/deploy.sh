@@ -14,7 +14,7 @@ source state/env.sh
 : ${VMRUN_BIN_PATH?"!"}
 : ${OVFTOOL_BIN_PATH?"!"}
 : ${VDISKMANAGER_BIN_PATH?"!"}
-: ${VCENTER_NETWORK_NAME:?"!"}
+: ${VMRUN_NETWORK:?"!"}
 : ${DIRECTOR_IP?"!"}
 : ${NETWORK_CIDR:?"!"}
 : ${NETWORK_GW:?"!"}
@@ -106,10 +106,10 @@ $bosh_bin create-env state/bosh-deployment/bosh.yml \
   -v internal_cidr="$NETWORK_CIDR" \
   -v internal_gw="$NETWORK_GW" \
   -v dns_recursor_ip="$NETWORK_DNS"  \
-  -v network_name="$VCENTER_NETWORK_NAME" \
   -v stemcell_url=file://$PWD/state/stemcell.tgz \
   -v stemcell_sha1=$stemcell_sha1 \
   -v vm_store_path="$vm_store_path" \
+  -v network_name="$VMRUN_NETWORK" \
   -v vmrun_bin_path="$VMRUN_BIN_PATH" \
   -v ovftool_bin_path="$OVFTOOL_BIN_PATH" \
   -v vdiskmanager_bin_path="$VDISKMANAGER_BIN_PATH" \
@@ -145,8 +145,7 @@ $bosh_bin update-cloud-config state/bosh-deployment/vsphere/cloud-config.yml \
   --ca-cert "$($bosh_bin int $PWD/state/bosh-deployment-creds.yml --path /default_ca/certificate)" \
   -e $DIRECTOR_IP \
   -o state/cloud-config-opsfile.yml \
-  -v vcenter_cluster=cluster1 \
+  -v network_name="$VMRUN_NETWORK" \
   -v internal_cidr="$NETWORK_CIDR" \
   -v internal_gw="$NETWORK_GW" \
-  -v network_name="$VCENTER_NETWORK_NAME" \
 ;
