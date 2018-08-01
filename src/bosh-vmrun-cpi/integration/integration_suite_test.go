@@ -57,8 +57,7 @@ var configTemplate, _ = template.New("parse").Parse(`{
 				"vm_store_path": "{{.VmStorePath}}",
 				"vmrun_bin_path": "{{.VmrunBinPath}}",
 				"vdiskmanager_bin_path": "{{.VdiskmanagerBinPath}}",
-				"ovftool_bin_path": "{{.OvftoolBinPath}}",
-				"network_name": "{{.NetworkName}}"
+				"ovftool_bin_path": "{{.OvftoolBinPath}}"
 			},
 			"agent": {
 				"ntp": [
@@ -81,13 +80,11 @@ func generateCPIConfig() (string, string) {
 
 	var configValues = struct {
 		VmStorePath         string
-		NetworkName         string
 		VmrunBinPath        string
 		VdiskmanagerBinPath string
 		OvftoolBinPath      string
 	}{
 		VmStorePath:         vmStoreTempDir,
-		NetworkName:         os.Getenv("VMRUN_NETWORK"),
 		VmrunBinPath:        os.Getenv("VMRUN_BIN_PATH"),
 		VdiskmanagerBinPath: os.Getenv("VDISKMANAGER_BIN_PATH"),
 		OvftoolBinPath:      os.Getenv("OVFTOOL_BIN_PATH"),
